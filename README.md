@@ -1,3 +1,4 @@
 # Cavity flow simulation (team 22)
 
-An Advanced Systems Lab project written by: Selin Baraş, Filip Jakšić, Pavel Kliska and Peter Horcic.  
+An Advanced Systems Lab project written by: Selin Baraş, Peter Horcic,
+Filip Jakšić, and Pavel Kliska.
