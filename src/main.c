@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <argp.h>
+#include "baseline_simulation.h"
 
 struct arguments {
     // Where we store the output of the simulation
@@ -44,5 +45,19 @@ int main(int argc, char* argv[]){
    arguments.output_file = "sim.csv";
    arguments.num_iter = 100;
    argp_parse(&argp, argc, argv, 0, 0, &arguments);
-   printf("%s\n%u\n", arguments.output_file, arguments.num_iter);
+   #ifdef DEBUG 
+   fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
+	   arguments.output_file, arguments.num_iter);
+   #endif
+   struct baseline_simulation * sim = new_baseline_simulation(41,41,
+							      1, 0.1);
+   advance_baseline_simulation(sim, arguments.num_iter, 50, 0.001);
+   FILE* output_file = fopen(arguments.output_file, "w");
+   if(!output_file){
+	fprintf(stderr, "can't write to output file %s\n",
+			arguments.output_file);
+	return -1;
+   }
+   write_baseline_simulation(sim, output_file);
+   destroy_baseline_simulation(sim);
 }
