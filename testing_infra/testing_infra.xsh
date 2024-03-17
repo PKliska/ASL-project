@@ -6,10 +6,13 @@ def main():
     $RAISE_SUBPROC_ERROR = True
     # for bash commands, print out how they were invoked (with which concrete args)
     # $XONSH_TRACE_SUBPROC = True
+
+    print("\n\n")
+
     $TESTING_DIR = "./.test_results"
     mkdir --parents "$TESTING_DIR"
 
-    print("\n\n")
+    make ../c_implementation > /dev/null # compile C code
 
     run_consystency_test()
 
@@ -26,9 +29,9 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     c_output_path_1 = f"{$TESTING_DIR}/output_c_1.csv"
     c_output_path_2 = f"{$TESTING_DIR}/output_c_2.csv"
 
-    make > /dev/null
-    ./bin/baseline --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
-    ./bin/baseline --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
+
+    ../c_implementation/bin/baseline --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
+    ../c_implementation/bin/baseline --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := compare_files_command.returncode != 0:
@@ -47,7 +50,7 @@ def check_if_c_output_matches_python():
     c_output_path = f"{$TESTING_DIR}/output_c.csv"
 
     make
-    ./bin/baseline --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
+    ../c_implementation/bin/baseline --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
 
     # print(read_matrices_from_csv(c_output_path)[0])
 
