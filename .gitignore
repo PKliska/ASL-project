@@ -1,1 +1,4 @@
 bin/
+
+# ignore python virtual env
+.venv/
