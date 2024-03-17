@@ -2,3 +2,6 @@ bin/
 
 # ignore python virtual env
 .venv/
+
+# ignore temp files created while running tests
+.test_results/
