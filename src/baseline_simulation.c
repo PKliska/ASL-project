@@ -17,9 +17,13 @@ static double* copy_array(double* a, size_t len){
 }
 static void write_matrix(double* m, size_t nx, size_t ny, FILE* fp){
     for(size_t i=0;i<nx;i++){
-        for(size_t j=0;j<ny;j++){
+        for(size_t j=0; j < (ny-1); j++){
+			// print (ny-1) times with comma at the end
             fprintf(fp, "%lf,", m[i*ny+j]);
         }
+
+		// print last element withouth comma at the end (cuz there are no elems after it)
+		fprintf(fp, "%lf", m[i*ny + ny]);
         fputc('\n', fp);
     }
 }
@@ -177,7 +181,7 @@ static void step_baseline_simulation(struct baseline_simulation* sim,
     free(un);
     free(vn);
 }
-/* Advance the simulation sim by steps steps of size dt, using pit 
+/* Advance the simulation sim by steps steps of size dt, using pit
  * iterations for the calculation of pressure.
 */
 void advance_baseline_simulation(struct baseline_simulation* sim,
@@ -199,7 +203,7 @@ void write_baseline_simulation(struct baseline_simulation* sim, FILE* fp){
 
     for(size_t i=4;i<COLUMNS;i++) fputc(',', fp);
     fputc('\n', fp);
-    
+
     write_matrix(sim->u, sim->nx, sim->ny, fp);
 
     for(size_t i=0;i<COLUMNS;i++) fputc(',', fp);
