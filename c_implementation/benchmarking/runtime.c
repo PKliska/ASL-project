@@ -5,13 +5,13 @@
 #define NUM_RUNS 30
 #define CYCLES_REQUIRED 1e8
 
-void fill_matrix(double * A, int n, int m) {
+/*void fill_matrix(double * A, int n, int m) {
     for(int i=0; i < n; i++) {
         for(int j=0; j < m; j++) {
             A[n*i+j] = (double) rand() / RAND_MAX;
         }
     }
-}
+}*/
 
 /*
  * Timing function based on the TimeStep Counter of the CPU.
@@ -23,7 +23,7 @@ void fill_matrix(double * A, int n, int m) {
  * pit: number of steps for computation of pressure
  */
 double rdtsc(struct baseline_simulation* sim,
-				     double *b, unsigned int pit,
+				     unsigned int steps, unsigned int pit,
 				     double dt) {
     int i, num_runs;
     myInt64 cycles = 0;
@@ -39,7 +39,7 @@ double rdtsc(struct baseline_simulation* sim,
     while(num_runs < (1 << 14)) {
         for (i = 0; i < num_runs; ++i) {
             start = start_tsc();
-            step_baseline_simulation(sim, b, pit, dt);
+            advance_baseline_simulation(sim, steps, pit, dt);
             cycles += stop_tsc(start);
         }
 
@@ -51,7 +51,7 @@ double rdtsc(struct baseline_simulation* sim,
     cycles = 0;
     for (i = 0; i < num_runs; ++i) {
         start = start_tsc();
-        step_baseline_simulation(sim, b, pit, dt);
+        advance_baseline_simulation(sim, steps, pit, dt);
         cycles += stop_tsc(start);
     }
 
@@ -73,11 +73,12 @@ int main() {
     for (int i = 0; i < n; i++) {
         struct baseline_simulation * sim = new_baseline_simulation(sizes[i], sizes[i],
                                     1, 0.1);
-        double* b = (double *)malloc(sim->nx*sim->ny*sizeof(double));
-        fill_matrix(b, sim->nx, sim->ny);
-        double pit = 50;
+        //double* b = (double *)malloc(sim->nx*sim->ny*sizeof(double));
+        //fill_matrix(b, sim->nx, sim->ny);
+        unsigned int steps = 10;
+        unsigned int pit = 50;
         double dt = 0.001;
-        double cycles = rdtsc(sim, b, pit, dt);
+        double cycles = rdtsc(sim, steps, pit, dt);
         printf("Size = %d, Cycles = %f \n", sizes[i], cycles);
     }
 

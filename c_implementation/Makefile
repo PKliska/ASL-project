@@ -10,6 +10,7 @@ bin/baseline: src/main.c src/baseline_simulation.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 benchmark:
+	mkdir -p bin
 	$(CC) $(CFLAGS) -o bin/runtime benchmarking/runtime.c src/baseline_simulation.c
 	./bin/runtime
 
