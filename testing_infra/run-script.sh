@@ -12,4 +12,4 @@ if [ -z "$1" ]; then # first arg is not set
     exit 1
 fi
 
-xonsh "$1"
+xonsh "$1" "${@:2}" # 1st arg is the program to be run and pass the other args into the program

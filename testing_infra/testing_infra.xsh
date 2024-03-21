@@ -1,5 +1,6 @@
 import csv
 from typing import Any
+import sys
 
 def main():
     # throw error if bash command fails, otherwise we silently ignore the error
@@ -18,7 +19,8 @@ def main():
     run_correctness_test()
 
 def run_correctness_test():
-    for i in range(10):
+    n_iterations = int(sys.argv[1]) if sys.argv[1] is not None else 10
+    for i in range(n_iterations + 1):
         print(f"n_simulation_iterations = {i} ", end="")
         try:
             check_if_c_output_matches_python_output_for(i)
