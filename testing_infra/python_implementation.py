@@ -1,5 +1,8 @@
 import csv
+import sys
+
 import numpy
+
 
 nx = 41
 ny = 41
@@ -97,29 +100,54 @@ def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
     return u, v, p
 
 if __name__ == '__main__':
+    u = numpy.zeros((ny, nx))
+    v = numpy.zeros((ny, nx))
+    p = numpy.zeros((ny, nx))
+    b = numpy.zeros((ny, nx))
 
- u = numpy.zeros((ny, nx))
- v = numpy.zeros((ny, nx))
- p = numpy.zeros((ny, nx))
- b = numpy.zeros((ny, nx))
- nt = 100
- u, v, p = cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu)
+    custom_nt = sys.argv[2]
+    if has_user_provided_destination := (custom_nt is not None) and (custom_nt != ""):
+        nt = int(custom_nt)
+    else:
+        nt = 100
 
- # Output to CSV
- with open('simulation_data.csv', 'w', newline='') as csvfile:
-     writer = csv.writer(csvfile)
+    u, v, p = cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu)
 
-     # Write metadata (first line)
-     writer.writerow([nx, ny, rho, nu])
+    custom_destination = sys.argv[1]
+    if has_user_provided_destination := (custom_destination is not None) and (custom_destination != ""):
+        output_destination = custom_destination
+    else:
+        output_destination = './.test_results/python_simulation_data.csv'
 
-     # Write U matrix
-     writer.writerows(u)
+    # Output to CSV
+    with open(output_destination, 'w') as csvfile:
+        writer = csv.writer(csvfile, lineterminator='\n')
 
-     # Write V matrix
-     writer.writerows(v)
+        # Write metadata (first line)l
+        # writer.writerow([nx, ny, rho, nu])
+        writer.writerow([f'{nx}', f'{ny}', f'{rho:.06f}', f'{nu:.06f}'] + ["" for _ in range(nx-3)])
+        # writer.writerow([f'{elem:.06f}' for elem in [nx, ny, rho, nu]])
 
-     # Write P matrix
-     writer.writerows(p)
+        def write_matrix(m):
+            for row in m:
+                writer.writerow([f'{elem:.06f}' for elem in row])
 
- print("Data saved to 'simulation_data.csv'")
+        # Write U matrix
+        # writer.writerows(u)
+        write_matrix(u)
+
+        writer.writerow(["" for _ in range(nx+1)])
+
+        # Write V matrix
+        # writer.writerows(v)
+        write_matrix(v)
+
+        writer.writerow(["" for _ in range(nx+1)])
+
+        # Write P matrix
+        # writer.writerows(p)
+        write_matrix(p)
+
+
+    # print("Data saved to 'python_simulation_data.csv'")
 
