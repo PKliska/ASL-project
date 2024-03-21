@@ -12,6 +12,4 @@ if [ -z "$1" ]; then # first arg is not set
     exit 1
 fi
 
-printf "\n\n"
-
 xonsh "$1"
