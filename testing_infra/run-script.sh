@@ -1,5 +1,7 @@
-#!/usr/bin/env nix-shell
-#!nix-shell --packages python3Full -i "bash"
+#!/usr/bin/env bash
+
+
+#### !nix-shell --packages python3Full -i "bash"
 
 set -e  # abort script at first error, when a command exits with non-zero status
 
