@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <argp.h>
+#include <cargs.h>
 #include "baseline_simulation.h"
 
 struct arguments {
@@ -10,41 +10,48 @@ struct arguments {
     unsigned int num_iter;
 };
 
-static struct argp_option options[] = {
-    {"output_file", 'o',
-     "OUTPUT_FILE", 0,
-     "Specify where the result of the simulation should be saved",
+static struct cag_option options[] = {
+    {.identifier = 'o',
+     .access_letters = "o",
+     .access_name = "output_file",
+     .value_name = "OUTPUT_FILE",
+     .description = "File to which the result of the simulation"
+		    "should be saved"
     },
-    {"num_iter", 'n',
-     "NUM_ITER", 0,
-     "Specify the number of iterations to simulate",
-    },
-    {0}
+    {.identifier = 'n',
+     .access_letters = "n",
+     .access_name = "num_iter",
+     .value_name = "NUM_ITER",
+     .description = "Number of simulation steps to simulate"
+    }
 };
 
-static error_t parse_opt(int key, char *arg, struct argp_state *state){
-    struct arguments *arguments = state->input;
-    switch(key){
-    case 'o':
-	arguments->output_file = arg;
-	break;
-    case 'n':
-	//todo: check that arg is really an unsigned int
-	arguments->num_iter = atoi(arg);
-	break;
-    default:
-	return ARGP_ERR_UNKNOWN;
+static void parse_args(struct arguments* args, int argc, char* argv[]){
+    cag_option_context context;
+    cag_option_init(&context, options, CAG_ARRAY_SIZE(options),
+		    argc, argv);
+    while(cag_option_fetch(&context)){
+	switch(cag_option_get_identifier(&context)){
+	case 'o':
+	    args->output_file = cag_option_get_value(&context);
+	    break;
+	case 'n':
+	    //todo: check that arg is really an unsigned int
+	    args->num_iter = atoi(cag_option_get_value(&context));
+	    break;
+	case '?':
+	    cag_option_print_error(&context, stderr);
+	    break;
+	}
     }
-    return 0;
 }
 
-static struct argp argp = {options, parse_opt, 0, 0};
 
 int main(int argc, char* argv[]){
    struct arguments arguments;
    arguments.output_file = "sim.csv";
    arguments.num_iter = 100;
-   argp_parse(&argp, argc, argv, 0, 0, &arguments);
+   parse_args(&arguments, argc, argv);
    #ifdef DEBUG 
    fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
 	   arguments.output_file, arguments.num_iter);
