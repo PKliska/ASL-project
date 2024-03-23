@@ -23,7 +23,7 @@ static void write_matrix(double* m, size_t nx, size_t ny, FILE* fp){
         }
 
 		// print last element withouth comma at the end (cuz there are no elems after it)
-		fprintf(fp, "%lf", m[i*ny + ny]);
+		fprintf(fp, "%lf", m[i*ny + ny-1]);
         fputc('\n', fp);
     }
 }
