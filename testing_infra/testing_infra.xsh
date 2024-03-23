@@ -12,7 +12,9 @@ def main():
     $TESTING_DIR = "./.test_results"
     mkdir --parents "$TESTING_DIR"
 
-    make ../c_implementation > /dev/null # compile C code
+    cmake -S ../c_implementation/ -B ../c_implementation/build/ \
+    	  > /dev/null # compile C code
+    make ../c_implementation/build
 
     # run_consystency_test()
 
@@ -60,7 +62,7 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
 
     # run C implementation & save output
     c_output_path = f"{root_dir_for_this_test}/output_c.csv"
-    ../c_implementation/bin/baseline --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
+    ../c_implementation/build/bin/cavity_flow --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )
