@@ -1,4 +1,4 @@
-c_implementation/bin/
+c_implementation/build/
 
 # ignore python virtual env
 .venv/
