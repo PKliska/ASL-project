@@ -3,6 +3,11 @@
 #include <string.h>
 #include "baseline_simulation.h"
 
+static const struct simulation_vtable_ BASELINE_SIMULATION_VTABLE_[] = {{
+    .advance=advance_baseline_simulation,
+    .write=write_baseline_simulation,
+    .destroy=destroy_baseline_simulation
+}};
 
 static double* zero_array(size_t len){
     size_t num_bytes = len*sizeof(double);
@@ -34,6 +39,7 @@ struct baseline_simulation* new_baseline_simulation(size_t nx, size_t ny,
     struct baseline_simulation *sim = malloc(
 	sizeof(struct baseline_simulation)
     );
+    sim->base.vtable_ = BASELINE_SIMULATION_VTABLE_;
     sim->nx = nx;
     sim->ny = ny;
     sim->rho = rho;

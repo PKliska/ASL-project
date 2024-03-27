@@ -1,8 +1,10 @@
 #ifndef BASELINE_SIMULATION_H
 #define BASELINE_SIMULATION_H
 #include <stdio.h>
+#include "simulation.h"
 
 struct baseline_simulation{
+    struct simulation base;
     size_t nx, ny;
     double rho,nu;
     double* u;

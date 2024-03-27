@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <cargs.h>
 #include <stdbool.h>
+#include "simulation.h"
 #include "baseline_simulation.h"
 #include "tsc_x86.h"
 
@@ -70,7 +71,7 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
  * dt: size of step
  * pit: number of steps for computation of pressure
  */
-double rdtsc(struct baseline_simulation* sim,
+double rdtsc(struct simulation* sim,
 				     unsigned int steps, unsigned int pit,
 				     double dt) {
     int i, num_runs;
@@ -87,7 +88,7 @@ double rdtsc(struct baseline_simulation* sim,
     while(num_runs < (1 << 14)) {
         for (i = 0; i < num_runs; ++i) {
             start = start_tsc();
-            advance_baseline_simulation(sim, steps, pit, dt);
+            advance_simulation(sim, steps, pit, dt);
             cycles += stop_tsc(start);
         }
 
@@ -99,7 +100,7 @@ double rdtsc(struct baseline_simulation* sim,
     cycles = 0;
     for (i = 0; i < num_runs; ++i) {
         start = start_tsc();
-        advance_baseline_simulation(sim, steps, pit, dt);
+        advance_simulation(sim, steps, pit, dt);
         cycles += stop_tsc(start);
     }
 
@@ -118,16 +119,16 @@ int main(int argc, char* argv[]){
     fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
         arguments.output_file, arguments.num_iter);
     #endif
-    struct baseline_simulation * sim = new_baseline_simulation(41,41,
+    struct simulation * sim = new_baseline_simulation(41,41,
                                     1, 0.1);
-    advance_baseline_simulation(sim, arguments.num_iter, 50, 0.001);
+    advance_simulation(sim, arguments.num_iter, 50, 0.001);
     FILE* output_file = fopen(arguments.output_file, "w");
     if(!output_file){
         fprintf(stderr, "can't write to output file %s\n",
                 arguments.output_file);
         return -1;
     }
-    write_baseline_simulation(sim, output_file);
+    write_simulation(sim, output_file);
     if (arguments.should_time) {
         int n = 100; // array length
         int sizes[n];
@@ -139,8 +140,7 @@ int main(int argc, char* argv[]){
         }
 
         for (int i = 0; i < n; i++) {
-            struct baseline_simulation * sim = new_baseline_simulation(sizes[i], sizes[i],
-                                        1, 0.1);
+            struct simulation * sim = new_baseline_simulation(sizes[i], sizes[i], 1, 0.1);
             unsigned int steps = 10;
             unsigned int pit = 50;
             double dt = 0.001;
@@ -150,5 +150,5 @@ int main(int argc, char* argv[]){
     }
 
 
-   destroy_baseline_simulation(sim);
+   destroy_simulation(sim);
 }

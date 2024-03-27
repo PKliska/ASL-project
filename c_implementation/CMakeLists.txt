@@ -3,7 +3,9 @@ project(cavity_flow C)
 
 add_subdirectory(external/cargs)
 
-add_executable(cavity_flow src/baseline_simulation.c src/main.c)
+
+add_executable(cavity_flow src/baseline_simulation.c src/main.c
+		           src/simulation.c)
 
 target_compile_options(cavity_flow PUBLIC -O3 -Wall -Wextra)
 target_include_directories(cavity_flow PUBLIC include)
