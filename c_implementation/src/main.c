@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <cargs.h>
 #include <stdbool.h>
+#include <string.h>
 #include "simulation.h"
 #include "baseline_simulation.h"
 #include "tsc_x86.h"
@@ -9,11 +10,25 @@
 #define NUM_RUNS 30
 #define CYCLES_REQUIRED 1e8
 
+struct implementation {
+    const char* name;
+    struct simulation* (*create)(size_t nx, size_t ny,
+                                 double rho, double nu);
+};
+
+static const struct implementation IMPLEMENTATIONS[] = {
+    {.name = "baseline",
+     .create = new_baseline_simulation
+    }
+};
+
 struct arguments {
     // Where we store the output of the simulation
     char *output_file;
     // Number of iterations of the simulation to run
     unsigned int num_iter;
+    // Which implementation to use
+    struct implementation implementation;
     // Should the simulation be timed?
     bool should_time;
 };
@@ -31,6 +46,13 @@ static struct cag_option options[] = {
      .access_name = "num_iter",
      .value_name = "NUM_ITER",
      .description = "Number of simulation steps to simulate"
+    },
+    {.identifier = 'I',
+     .access_letters = "I",
+     .access_name = "implementetion",
+     .value_name = "IMPLEMENTATION",
+     .description = "Implementation of the simulation to use"
+                    "(default: baseline)"
     },
     {.identifier = 't',
      .access_letters = "t",
@@ -51,6 +73,14 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
             case 'n':
                 //todo: check that arg is really an unsigned int
                 args->num_iter = atoi(cag_option_get_value(&context));
+                break;
+            case 'I':
+                const char* impl_name = cag_option_get_value(&context);
+                for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
+                    if(strcmp(IMPLEMENTATIONS[i].name, impl_name) == 0){
+                        args->implementation = IMPLEMENTATIONS[i];
+                    }
+                }
                 break;
             case 't':
                 args->should_time = true;
@@ -110,17 +140,19 @@ double rdtsc(struct simulation* sim,
 
 
 int main(int argc, char* argv[]){
-    struct arguments arguments;
-    arguments.output_file = "sim.csv";
-    arguments.num_iter = 100;
-    arguments.should_time = false;
+    struct arguments arguments = {
+        .output_file = "sim.csv",
+        .num_iter = 100,
+        .implementation = IMPLEMENTATIONS[0],
+        .should_time = false
+    };
     parse_args(&arguments, argc, argv);
     #ifdef DEBUG 
     fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
         arguments.output_file, arguments.num_iter);
     #endif
-    struct simulation * sim = new_baseline_simulation(41,41,
-                                    1, 0.1);
+    struct simulation * sim = arguments.implementation.create(41,41,
+                                                               1, 0.1);
     advance_simulation(sim, arguments.num_iter, 50, 0.001);
     FILE* output_file = fopen(arguments.output_file, "w");
     if(!output_file){
@@ -140,7 +172,9 @@ int main(int argc, char* argv[]){
         }
 
         for (int i = 0; i < n; i++) {
-            struct simulation * sim = new_baseline_simulation(sizes[i], sizes[i], 1, 0.1);
+            struct simulation * sim = arguments.implementation.create(
+                sizes[i], sizes[i], 1, 0.1
+            );
             unsigned int steps = 10;
             unsigned int pit = 50;
             double dt = 0.001;
