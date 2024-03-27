@@ -3,6 +3,7 @@
 #include <string.h>
 #include "baseline_simulation.h"
 
+
 static double* zero_array(size_t len){
     size_t num_bytes = len*sizeof(double);
     double *a = malloc(num_bytes);
