@@ -1,43 +1,48 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include "utils.h"
-#include "baseline_simulation.h"
+#include "preallocated_simulation.h"
 
-static const struct simulation_vtable_ BASELINE_SIMULATION_VTABLE_[] = {{
-    .advance=advance_baseline_simulation,
-    .write=write_baseline_simulation,
-    .destroy=destroy_baseline_simulation
+static const struct simulation_vtable_ PREALLOCATED_SIMULATION_VTABLE_[] = {{
+    .advance=advance_preallocated_simulation,
+    .write=write_preallocated_simulation,
+    .destroy=destroy_preallocated_simulation
 }};
 
-struct baseline_simulation* new_baseline_simulation(size_t nx, size_t ny,
-		                                            double rho, double nu){
-    struct baseline_simulation *sim = malloc(
-	sizeof(struct baseline_simulation)
+
+struct preallocated_simulation* new_preallocated_simulation(
+    size_t nx, size_t ny, double rho, double nu){
+    struct preallocated_simulation *sim = malloc(
+	sizeof(struct preallocated_simulation)
     );
-    sim->base.vtable_ = BASELINE_SIMULATION_VTABLE_;
+    sim->base.vtable_ = PREALLOCATED_SIMULATION_VTABLE_;
     sim->nx = nx;
     sim->ny = ny;
     sim->rho = rho;
     sim->nu = nu;
     sim->u = zero_array(nx*ny);
+    sim->un = zero_array(nx*ny);
     sim->v = zero_array(nx*ny);
+    sim->vn = zero_array(nx*ny);
     sim->p = zero_array(nx*ny);
+    sim->pn = zero_array(nx*ny);
+    sim->b = zero_array(nx*ny);
     return sim;
 }
 static double sq(const double x){
     return x*x;
 }
 
-static void build_up_b(const struct baseline_simulation* sim,
-		       double* b, double dt){
+static void build_up_b(const struct preallocated_simulation* sim,
+		       double dt){
+    double *restrict b = sim->b;
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
     const double rho = sim->rho;
     const double dx = 2.0 / (nx - 1);
     const double dy = 2.0 / (ny - 1);
-    const double* u = sim->u;
-    const double* v = sim->v;
+    const double *restrict u = sim->u;
+    const double *restrict v = sim->v;
     for(size_t i=1;i<nx - 1;i++){
 	for(size_t j=1;j<ny - 1;j++){
 	    const double u_left =  u[ny*i     + j-1];
@@ -59,17 +64,21 @@ static void build_up_b(const struct baseline_simulation* sim,
     }
 }
 
-static void pressure_poisson(struct baseline_simulation* sim,
-			     unsigned int pit, double* b){
+static void pressure_poisson(struct preallocated_simulation* sim,
+			     unsigned int pit){
+    double *restrict b = sim->b;
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
     const double dx = 2.0 / (nx - 1);
     const double dy = 2.0 / (ny - 1);
-    const size_t bytes = nx*ny*sizeof(double);
-    double* p = sim->p;
-    double* pn = malloc(bytes);
     for(unsigned int q=0;q<pit;q++){
-	memcpy(pn, p, bytes);
+	//Swap p and pn
+	double *tmp = sim->p;
+	sim->p = sim->pn;
+	sim->pn = tmp;
+
+	double *restrict p = sim->p;
+	double *restrict pn = sim->pn;
 	for(size_t i=1;i<nx-1;i++){
 	    for(size_t j=1;j<ny-1;j++){
 		const double pn_left =  pn[ny*i     + j-1];
@@ -88,29 +97,36 @@ static void pressure_poisson(struct baseline_simulation* sim,
 	for(size_t j=0;j<ny;j++) p[ny*0      + j   ] = p[ny*1 + j];
 	for(size_t j=0;j<ny;j++) p[ny*(nx-1) + j   ] = 0;
     }
-    free(pn);
 }
 
 /* Advance the simulation sim by one step of size dt using pit iterations
  * for the calculation of pressure. Use the array b for the calculation
  * of the intermediate matrix b.
 */
-static void step_baseline_simulation(struct baseline_simulation* sim,
-				     double *b, unsigned int pit,
-				     double dt){
+static void step_preallocated_simulation(
+    struct preallocated_simulation* sim, unsigned int pit, double dt){
+    
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
     const double dx = 2.0 / (nx - 1);
     const double dy = 2.0 / (ny - 1);
     const double rho = sim->rho;
     const double nu = sim->nu;
-    double* u = sim->u;
-    double* v = sim->v;
-    double* p = sim->p;
-    double* un = copy_array(sim->u, nx*ny);
-    double* vn = copy_array(sim->v, nx*ny);
-    build_up_b(sim, b, dt);
-    pressure_poisson(sim, pit, b);
+    //Swap u and un
+    double* tmp = sim->u;
+    sim->u = sim->un;
+    sim->un = tmp;
+    //Swap v and vn
+    double* tmp2 = sim->v;
+    sim->v = sim->vn;
+    sim->vn = tmp2;
+    double *restrict u = sim->u;
+    double *restrict v = sim->v;
+    double *restrict p = sim->p;
+    double *restrict un = sim->un;
+    double *restrict vn = sim->vn;
+    build_up_b(sim, dt);
+    pressure_poisson(sim, pit);
     for(size_t i=1;i<nx-1;i++){
 	for(size_t j=1;j<ny-1;j++){
 	    const double un_here  = un[ny*i     + j  ];
@@ -161,26 +177,21 @@ static void step_baseline_simulation(struct baseline_simulation* sim,
 	    v[ny*0      + j] = 0;
 	    v[ny*(nx-1) + j] = 0;
     }
-    free(un);
-    free(vn);
 }
 /* Advance the simulation sim by steps steps of size dt, using pit
  * iterations for the calculation of pressure.
 */
-void advance_baseline_simulation(struct baseline_simulation* sim,
+void advance_preallocated_simulation(struct preallocated_simulation* sim,
 				 unsigned int steps,
 				 unsigned int pit, double dt){
-    const size_t nx = sim->nx;
-    const size_t ny = sim->ny;
-    double* b = zero_array(nx * ny);
     for(unsigned int i=0;i<steps;i++){
-	    step_baseline_simulation(sim, b, pit, dt);
+	step_preallocated_simulation(sim, pit, dt);
     }
-    free(b);
 }
 
 
-void write_baseline_simulation(struct baseline_simulation* sim, FILE* fp){
+void write_preallocated_simulation(struct preallocated_simulation* sim,
+			       FILE* fp){
     const size_t COLUMNS = sim->ny;
     fprintf(fp, "%zu,%zu,%lf,%lf,", sim->nx, sim->ny, sim->rho, sim->nu);
 
@@ -200,9 +211,13 @@ void write_baseline_simulation(struct baseline_simulation* sim, FILE* fp){
     write_matrix(sim->p, sim->nx, sim->ny, fp);
 }
 
-void destroy_baseline_simulation(struct baseline_simulation* sim){
+void destroy_preallocated_simulation(struct preallocated_simulation* sim){
     free(sim->u);
+    free(sim->un);
     free(sim->v);
+    free(sim->vn);
     free(sim->p);
+    free(sim->pn);
+    free(sim->b);
     free(sim);
 }

@@ -5,6 +5,7 @@
 #include <string.h>
 #include "simulation.h"
 #include "baseline_simulation.h"
+#include "preallocated_simulation.h"
 #include "tsc_x86.h"
 
 #define NUM_RUNS 30
@@ -19,6 +20,9 @@ struct implementation {
 static const struct implementation IMPLEMENTATIONS[] = {
     {.name = "baseline",
      .create = new_baseline_simulation
+    },
+    {.name = "preallocated",
+     .create = new_preallocated_simulation
     }
 };
 
@@ -76,10 +80,31 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                 break;
             case 'I':
                 const char* impl_name = cag_option_get_value(&context);
+                if(!impl_name){
+                    fputs("error: missing implementation after -I\n"
+                          "Valid options are:\n", stderr);
+                    for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
+                        fprintf(stderr, "%s ", IMPLEMENTATIONS[i].name);
+                    }
+                    fputc('\n', stderr);
+                    exit(-1);
+                }
+                bool found = false;
                 for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
                     if(strcmp(IMPLEMENTATIONS[i].name, impl_name) == 0){
                         args->implementation = IMPLEMENTATIONS[i];
+                        found = true;
+                        break;
                     }
+                }
+                if(!found){
+                    fprintf(stderr, "error: implementation %s does not "
+                            "exist\nValid options are:\n", impl_name);
+                    for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
+                        fprintf(stderr, "%s ", IMPLEMENTATIONS[i].name);
+                    }
+                    fputc('\n', stderr);
+                    exit(-1);
                 }
                 break;
             case 't':
