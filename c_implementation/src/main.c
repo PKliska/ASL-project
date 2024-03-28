@@ -176,16 +176,6 @@ int main(int argc, char* argv[]){
     fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
         arguments.output_file, arguments.num_iter);
     #endif
-    struct simulation * sim = arguments.implementation.create(41,41,
-                                                               1, 0.1);
-    advance_simulation(sim, arguments.num_iter, 50, 0.001);
-    FILE* output_file = fopen(arguments.output_file, "w");
-    if(!output_file){
-        fprintf(stderr, "can't write to output file %s\n",
-                arguments.output_file);
-        return -1;
-    }
-    write_simulation(sim, output_file);
     if (arguments.should_time) {
         int n = 100; // array length
         int sizes[n];
@@ -204,10 +194,20 @@ int main(int argc, char* argv[]){
             unsigned int pit = 50;
             double dt = 0.001;
             double cycles = rdtsc(sim, steps, pit, dt);
+            destroy_simulation(sim);
             printf("Cycles = %f \n", cycles);
         }
+    } else {
+        struct simulation * sim = arguments.implementation.create(41,41,
+                                                                   1, 0.1);
+        advance_simulation(sim, arguments.num_iter, 50, 0.001);
+        FILE* output_file = fopen(arguments.output_file, "w");
+        if(!output_file){
+            fprintf(stderr, "can't write to output file %s\n",
+                    arguments.output_file);
+            return -1;
+        }
+        write_simulation(sim, output_file);
+        destroy_simulation(sim);
     }
-
-
-   destroy_simulation(sim);
 }
