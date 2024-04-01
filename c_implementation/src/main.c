@@ -180,11 +180,11 @@ int main(int argc, char* argv[]){
         arguments.output_file, arguments.num_iter);
     #endif
     if (arguments.should_time) {
-        int n = 100; // array length
+        int n = 40; // array length
         int sizes[n];
      
-        int start_value = 10;
-        int step_size = (500 - 10) / (n - 1);
+        int start_value = 50;
+        int step_size = 50;
         for (int i = 0; i < n; i++) {
             sizes[i] = start_value + i * step_size;
         }
@@ -198,7 +198,7 @@ int main(int argc, char* argv[]){
             double dt = 0.001;
             double cycles = rdtsc(sim, steps, pit, dt);
             destroy_simulation(sim);
-            printf("Cycles = %f \n", cycles);
+            printf("%d %f \n", sizes[i], cycles);
         }
     } else {
         struct simulation * sim = arguments.implementation.create(41,41,
