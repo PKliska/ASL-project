@@ -3,10 +3,12 @@
 #include "utils.h"
 #include "preallocated_simulation.h"
 
+
+// @Pavel casting
 static const struct simulation_vtable_ PREALLOCATED_SIMULATION_VTABLE_[] = {{
-    .advance=advance_preallocated_simulation,
-    .write=write_preallocated_simulation,
-    .destroy=destroy_preallocated_simulation
+    .advance=(void (*)(struct simulation *, unsigned int, unsigned int, double))advance_preallocated_simulation,
+    .write=(void (*)(const struct simulation *, FILE *))write_preallocated_simulation,
+    .destroy=(void (*)(struct simulation *))destroy_preallocated_simulation
 }};
 
 

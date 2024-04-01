@@ -4,11 +4,12 @@
 #include "utils.h"
 #include "baseline_simulation.h"
 
+// @Pavel here i added casting
 static const struct simulation_vtable_ BASELINE_SIMULATION_VTABLE_[] = {{
-    .advance=advance_baseline_simulation,
-    .write=write_baseline_simulation,
-    .destroy=destroy_baseline_simulation
-}};
+    .advance=(void (*)(struct simulation *, unsigned int, unsigned int, double))advance_baseline_simulation,
+    .write=(void (*)(const struct simulation *, FILE *))write_baseline_simulation,
+    .destroy=(void (*)(struct simulation *))destroy_baseline_simulation
+}}; 
 
 struct baseline_simulation* new_baseline_simulation(size_t nx, size_t ny,
 		                                            double rho, double nu){

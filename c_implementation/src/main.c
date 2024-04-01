@@ -17,24 +17,27 @@ struct implementation {
                                  double rho, double nu);
 };
 
+// @Pavel casting
 static const struct implementation IMPLEMENTATIONS[] = {
     {.name = "baseline",
-     .create = new_baseline_simulation
+     .create = (struct simulation *(*)(size_t, size_t, double, double))new_baseline_simulation
     },
     {.name = "preallocated",
-     .create = new_preallocated_simulation
+     .create = (struct simulation *(*)(size_t, size_t, double, double))new_preallocated_simulation
     }
 };
 
 struct arguments {
     // Where we store the output of the simulation
-    char *output_file;
+    const char *output_file; // @Pavel I made this constant
     // Number of iterations of the simulation to run
     unsigned int num_iter;
     // Which implementation to use
     struct implementation implementation;
     // Should the simulation be timed?
     bool should_time;
+    // which implementation
+    const char *impl_name; // @Pavel I moved this here, somehow only like so it wokrs
 };
 
 static struct cag_option options[] = {
@@ -79,8 +82,8 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                 args->num_iter = atoi(cag_option_get_value(&context));
                 break;
             case 'I':
-                const char* impl_name = cag_option_get_value(&context);
-                if(!impl_name){
+                args->impl_name = cag_option_get_value(&context); // @Pavel modified this
+                if(!args->impl_name){
                     fputs("error: missing implementation after -I\n"
                           "Valid options are:\n", stderr);
                     for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
@@ -91,7 +94,7 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                 }
                 bool found = false;
                 for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
-                    if(strcmp(IMPLEMENTATIONS[i].name, impl_name) == 0){
+                    if(strcmp(IMPLEMENTATIONS[i].name, args->impl_name) == 0){
                         args->implementation = IMPLEMENTATIONS[i];
                         found = true;
                         break;
@@ -99,7 +102,7 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                 }
                 if(!found){
                     fprintf(stderr, "error: implementation %s does not "
-                            "exist\nValid options are:\n", impl_name);
+                            "exist\nValid options are:\n", args->impl_name);
                     for(size_t i = 0;i<sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]);i++){
                         fprintf(stderr, "%s ", IMPLEMENTATIONS[i].name);
                     }
