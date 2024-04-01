@@ -15,7 +15,6 @@ output_lines = output.decode().split("\n")
 # Assuming each line contains two numbers separated by space
 data = [tuple(map(float, line.split())) for line in output_lines if line]
 
-
 with open("output.csv", "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(["X", "Y"])  

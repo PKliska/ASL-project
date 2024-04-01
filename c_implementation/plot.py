@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 FREQUENCY = 2e9 
 
 def plot_csv_files(csv_files, labels):
-
     sns.set_theme(style="dark")
 
     palette = sns.color_palette("rocket", len(csv_files))
@@ -21,9 +20,9 @@ def plot_csv_files(csv_files, labels):
     plt.legend()
     plt.grid(axis='y', alpha=0.7) 
 
+    plt.savefig("plot")
 
     plt.show()
-
 
 csv_files = ["baseline.csv", "preallocated.csv"]  # List of CSV files
 custom_labels = ["Baseline", "Preallocated"]  # List of custom labels
