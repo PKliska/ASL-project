@@ -2,10 +2,10 @@ import subprocess
 import matplotlib.pyplot as plt
 import csv
 
-# Define the compiler flags
-compiler_flags = ["-I", "preallocated", "-t"]  # Example flags, modify as needed
+# Define the compiler flags as desired
+compiler_flags = ["-I", "preallocated", "-t"]  
 
-# Run the compiled C program with compiler flags and capture its output
+# Modify this as required
 command = ["/Users/peterhorcic/team22/c_implementation/build/bin/cavity_flow"] + compiler_flags
 process = subprocess.Popen(command, stdout=subprocess.PIPE)
 output, _ = process.communicate()
@@ -15,10 +15,10 @@ output_lines = output.decode().split("\n")
 # Assuming each line contains two numbers separated by space
 data = [tuple(map(float, line.split())) for line in output_lines if line]
 
-# Save data to a CSV file
+
 with open("output.csv", "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(["X", "Y"])  # Write header row
-    writer.writerows(data)       # Write data rows
+    writer.writerow(["X", "Y"])  
+    writer.writerows(data)       
 
 print("Data saved to output.csv")
