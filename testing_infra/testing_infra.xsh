@@ -21,7 +21,7 @@ def main():
     run_correctness_test()
 
 def run_correctness_test():
-    n_iterations = int(sys.argv[1]) if len(sys.argv) > 1 is not None else 10
+    n_iterations = int(sys.argv[1]) if len(sys.argv) > 1 else 10
     for i in range(n_iterations + 1):
         print(f"n_simulation_iterations = {i} ", end="")
         try:
