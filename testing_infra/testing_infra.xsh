@@ -2,22 +2,14 @@ import csv
 from typing import Any
 import sys
 
+
 def main():
-    # throw error if bash command fails, otherwise we silently ignore the error
-    $RAISE_SUBPROC_ERROR = True
-    $XONSH_SHOW_TRACEBACK = True
-    # for bash commands, print out how they were invoked (with which concrete args)
-    # $XONSH_TRACE_SUBPROC = True
+    set_global_variables()
 
-    $TESTING_DIR = "./.test_results"
+    recompile_c_implementation()
+
     mkdir --parents "$TESTING_DIR"
-
-    cmake -S ../c_implementation/ -B ../c_implementation/build/ > /dev/null # compile C code
-    # run make in C implementation dir and then cd back into the prev dir (infra dir)
-    cd ../c_implementation/build && make && cd -
-
     # run_consystency_test()
-
     run_correctness_test()
 
 def run_correctness_test():
@@ -42,8 +34,8 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     c_output_path_1 = f"{$TESTING_DIR}/output_c_1.csv"
     c_output_path_2 = f"{$TESTING_DIR}/output_c_2.csv"
 
-    ../c_implementation/bin/baseline --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
-    ../c_implementation/bin/baseline --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/bin/baseline --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/bin/baseline --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := has_command_failed(compare_files_command):
@@ -62,7 +54,7 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
 
     # run C implementation & save output
     c_output_path = f"{root_dir_for_this_test}/output_c.csv"
-    ../c_implementation/build/bin/cavity_flow --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )
@@ -74,6 +66,24 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
 
 
 ## HELPER FUNCTIONS
+def set_global_variables():
+    ## VARS FOR THIS PROGRAM
+    $C_IMPLEMENTATION_DIR = "../c_implementation"
+
+    $TESTING_DIR = "./.test_results"
+
+    ## XONSH
+    # throw error if bash command fails, otherwise we silently ignore the error
+    $RAISE_SUBPROC_ERROR = True
+    $XONSH_SHOW_TRACEBACK = True
+    # for bash commands, print out how they were invoked (with which concrete args)
+    # $XONSH_TRACE_SUBPROC = True
+
+def recompile_c_implementation():
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ > /dev/null
+    # run make in C implementation dir and then cd back into the prev dir (infra dir)
+    cd $C_IMPLEMENTATION_DIR/build && make && cd -
+
 def read_matrices_from_csv(csv_path: str) -> tuple[Any, Any, Any]:
     with open(csv_path, 'r') as csv_file:
         csv_lines = csv_file.readlines()
