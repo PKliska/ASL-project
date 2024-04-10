@@ -12,16 +12,16 @@ def main():
     $TESTING_DIR = "./.test_results"
     mkdir --parents "$TESTING_DIR"
 
-    cmake -S ../c_implementation/ -B ../c_implementation/build/ \
-    	  > /dev/null # compile C code
-    make ../c_implementation/build
+    cmake -S ../c_implementation/ -B ../c_implementation/build/ > /dev/null # compile C code
+    # run make in C implementation dir and then cd back into the prev dir (infra dir)
+    cd ../c_implementation/build && make && cd -
 
     # run_consystency_test()
 
     run_correctness_test()
 
 def run_correctness_test():
-    n_iterations = int(sys.argv[1]) if sys.argv[1] is not None else 10
+    n_iterations = int(sys.argv[1]) if len(sys.argv) > 1 is not None else 10
     for i in range(n_iterations + 1):
         print(f"n_simulation_iterations = {i} ", end="")
         try:
