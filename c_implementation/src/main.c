@@ -122,7 +122,7 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
 
 /*
  * Timing function based on the TimeStep Counter of the CPU.
- * 
+ *
  * Arguments:
  * sim: simulation
  * b: intermediate matrix
@@ -174,43 +174,34 @@ int main(int argc, char* argv[]){
         .implementation = IMPLEMENTATIONS[0],
         .should_time = false
     };
+
     parse_args(&arguments, argc, argv);
-    #ifdef DEBUG 
+    #ifdef DEBUG
     fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
         arguments.output_file, arguments.num_iter);
     #endif
-    if (arguments.should_time) {
-        int n = 40; // array length
-        int sizes[n];
-     
-        int start_value = 50;
-        int step_size = 50;
-        for (int i = 0; i < n; i++) {
-            sizes[i] = start_value + i * step_size;
-        }
 
-        for (int i = 0; i < n; i++) {
-            struct simulation * sim = arguments.implementation.create(
-                sizes[i], sizes[i], 1, 0.1
-            );
-            unsigned int steps = 10;
-            unsigned int pit = 50;
-            double dt = 0.001;
-            double cycles = rdtsc(sim, steps, pit, dt);
-            destroy_simulation(sim);
-            printf("%d %f \n", sizes[i], cycles);
-        }
+    unsigned int pit = 50;
+    double dt = 0.001;
+    size_t matrix_size = 41;
+    double rho = 1.0, nu = 0.01;
+
+    struct simulation * sim = arguments.implementation.create(
+        matrix_size, matrix_size, rho, nu
+    );
+
+    if (arguments.should_time) {
+        double cycles = rdtsc(sim, arguments.num_iter, pit, dt);
+        printf("Runtime of simulation (in cycles): %f\n", cycles);
     } else {
-        struct simulation * sim = arguments.implementation.create(41,41,
-                                                                   1, 0.1);
-        advance_simulation(sim, arguments.num_iter, 50, 0.001);
+        advance_simulation(sim, arguments.num_iter, pit, dt);
         FILE* output_file = fopen(arguments.output_file, "w");
-        if(!output_file){
-            fprintf(stderr, "can't write to output file %s\n",
-                    arguments.output_file);
+        if (!output_file){
+            fprintf(stderr, "can't write to output file %s\n", arguments.output_file);
             return -1;
         }
         write_simulation(sim, output_file);
-        destroy_simulation(sim);
     }
+
+    destroy_simulation(sim);
 }
