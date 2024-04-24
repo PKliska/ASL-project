@@ -1,6 +1,8 @@
 import csv
 from typing import Any
 import sys
+from time import strftime
+from pathlib import Path
 
 
 def main():
@@ -10,7 +12,37 @@ def main():
 
     mkdir --parents "$TESTING_DIR"
     # run_consystency_test()
-    run_correctness_test()
+    # run_correctness_test()
+
+    run_timing_test()
+
+def run_timing_test():
+    current_time = strftime("%Y-%m-%d %H:%M:%S")
+
+    for implementation in ["baseline", "preallocated"]:
+        data = []
+        for n_simulation_iterations in range(100, 50000, 5000):
+            output = $( $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I @(implementation) -t --num_iter @(n_simulation_iterations) )
+            n_cycles = float(output.strip().split()[-1])
+
+            print(f"Simulating {implementation} with n_iter={n_simulation_iterations} took {n_cycles} cycles ({n_cycles/(2.5*10**9)} sec)")
+            data.append((n_simulation_iterations, n_cycles))
+
+        print(data)
+
+
+    root_dir_for_this_test = f"{$TESTING_DIR}/timing/{current_time}"
+        mkdir --parents @(root_dir_for_this_test)
+
+        with open(f"{root_dir_for_this_test}/{implementation}.csv", "w", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["n_simulation_iterations", "n_cycles"])
+            writer.writerows(data)
+
+    # make plot
+    # TODO: move plotter into testing infra
+    cd @(root_dir_for_this_test) && python $C_IMPLEMENTATION_DIR/plot.py && cd -
+
 
 def run_correctness_test():
     n_iterations = int(sys.argv[1]) if len(sys.argv) > 1 else 10
@@ -68,9 +100,10 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
 ## HELPER FUNCTIONS
 def set_global_variables():
     ## VARS FOR THIS PROGRAM
-    $C_IMPLEMENTATION_DIR = "../c_implementation"
+    $TESTING_INFRA_ROOT_DIR = Path(__file__).parent.resolve(strict=True)
+    $C_IMPLEMENTATION_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/../c_implementation").resolve(strict=True)
 
-    $TESTING_DIR = "./.test_results"
+    $TESTING_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/.test_results").resolve(strict=True)
 
     ## XONSH
     # throw error if bash command fails, otherwise we silently ignore the error
@@ -80,9 +113,12 @@ def set_global_variables():
     # $XONSH_TRACE_SUBPROC = True
 
 def recompile_c_implementation():
-    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ > /dev/null
+    print("🎬 Re-compiling C implementation...")
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/
     # run make in C implementation dir and then cd back into the prev dir (infra dir)
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
+
+    print("✅ Finished re-compiling C implementation!\n")
 
 def read_matrices_from_csv(csv_path: str) -> tuple[Any, Any, Any]:
     with open(csv_path, 'r') as csv_file:
