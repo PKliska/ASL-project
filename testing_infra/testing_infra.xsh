@@ -3,25 +3,49 @@ from typing import Any
 import sys
 from time import strftime
 from pathlib import Path
+from argparse import ArgumentParser
 
 
 def main():
+    args = parse_cli_args()
     set_global_variables()
 
     recompile_c_implementation()
-
     mkdir --parents "$TESTING_DIR"
-    # run_consystency_test()
-    # run_correctness_test()
 
-    run_timing_test()
+    # based on arguments, run timing plot, consystency, correctness, etc.
+    if args.run == "timing":
+        if args.quick:
+            run_timing_test(100, 5000, 2000)
+        else:
+            run_timing_test(100, 50000, 10000)
+    elif args.run == "correctness":
+        run_correctness_test()
+    elif args.run == "consystency":
+        run_consystency_test()
+    elif args.run == "all":
+        run_correctness_test()
+        run_consystency_test()
+        run_timing_test(100, 50000, 10000)
+    else:
+        raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
 
-def run_timing_test():
+def parse_cli_args():
+    argparser = ArgumentParser(description="")
+    argparser.add_argument("--run", metavar="ACTION", default="all", help="Action to execute (e.g. run correctness tests)")
+    group = argparser.add_mutually_exclusive_group()
+    group.add_argument("--quick", action="store_true", default=True, help="Quickly gets some (rough) results")
+    group.add_argument("--slow", action="store_true", help="Slowly gets detailed results, runs more iterations of the algo")
+
+    args = argparser.parse_args()
+    return args
+
+def run_timing_test(start: int, stop: int, step: int):
     current_time = strftime("%Y-%m-%d %H:%M:%S")
 
     for implementation in ["baseline", "preallocated"]:
         data = []
-        for n_simulation_iterations in range(100, 50000, 5000):
+        for n_simulation_iterations in range(start, stop, step):
             output = $( $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I @(implementation) -t --num_iter @(n_simulation_iterations) )
             n_cycles = float(output.strip().split()[-1])
 
@@ -31,7 +55,7 @@ def run_timing_test():
         print(data)
 
 
-    root_dir_for_this_test = f"{$TESTING_DIR}/timing/{current_time}"
+        root_dir_for_this_test = f"{$TESTING_DIR}/timing/{current_time}"
         mkdir --parents @(root_dir_for_this_test)
 
         with open(f"{root_dir_for_this_test}/{implementation}.csv", "w", newline="") as csvfile:
