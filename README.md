@@ -25,6 +25,15 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 
 # actually run the testing infrastructure
-./run-script.sh ./testing_infra.xsh
+./run-script.sh ./testing_infra.xsh # runs all tests (correctness, consystency & timing)
+
+# runs just the (short) timing test to generate the plot, quick but only times the algo for 3 "sizes"
+./run-script.sh ./testing_infra.xsh --run timing --short
+
+# runs the long timing test which takes way longer to complete, but tests more sizes (like >10)
+./run-script.sh ./testing_infra.xsh --run timing --long
+
+# runs correctness test
+./run-script.sh ./testing_infra.xsh --run correctness
 ```
 
