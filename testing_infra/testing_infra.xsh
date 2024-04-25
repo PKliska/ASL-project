@@ -54,7 +54,6 @@ def run_timing_test(start: int, stop: int, step: int):
 
         print(data)
 
-
         root_dir_for_this_test = f"{$TESTING_DIR}/timing/{current_time}"
         mkdir --parents @(root_dir_for_this_test)
 
@@ -64,8 +63,9 @@ def run_timing_test(start: int, stop: int, step: int):
             writer.writerows(data)
 
     # make plot
-    # TODO: move plotter into testing infra
-    cd @(root_dir_for_this_test) && python $C_IMPLEMENTATION_DIR/plot.py && cd -
+    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/plot.py && cd -
+
+    print(f"\n✅ Saved plot at '{root_dir_for_this_test}/plot.png'")
 
 
 def run_correctness_test():
