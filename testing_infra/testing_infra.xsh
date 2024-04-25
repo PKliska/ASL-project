@@ -90,8 +90,8 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     c_output_path_1 = f"{$TESTING_DIR}/output_c_1.csv"
     c_output_path_2 = f"{$TESTING_DIR}/output_c_2.csv"
 
-    $C_IMPLEMENTATION_DIR/bin/baseline --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
-    $C_IMPLEMENTATION_DIR/bin/baseline --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I "baseline" --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I "baseline" --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := has_command_failed(compare_files_command):
