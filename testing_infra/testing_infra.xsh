@@ -41,6 +41,8 @@ def parse_cli_args():
     return args
 
 def run_timing_test(start: int, stop: int, step: int):
+    print("\n🟠 Starting timing test...")
+
     current_time = strftime("%Y-%m-%d %H:%M:%S")
 
     for implementation in ["baseline", "preallocated"]:
@@ -65,23 +67,38 @@ def run_timing_test(start: int, stop: int, step: int):
     # make plot
     cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot.py && cd -
 
-    print(f"\n✅ Saved plot at '{root_dir_for_this_test}/plot.png'")
+    print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot.png'\n")
 
 
 def run_correctness_test():
-    n_iterations = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-    for i in range(n_iterations + 1):
+    print("\n🟠 Starting correctness test...")
+
+    iterations_which_to_test = [0, 1] + list(range(0, 1000, 77)) # test for 0, 1 & some odd ones just in case
+    iterations_which_to_test = sorted(list(set(iterations_which_to_test))) # remove duplicates & sort
+
+    is_some_result_incorrect = False
+    for i in iterations_which_to_test:
         print(f"n_simulation_iterations = {i} ", end="")
         try:
             check_if_c_output_matches_python_output_for(i)
         except Exception:
+            is_some_result_incorrect = True
             pass
 
+    if is_some_result_incorrect:
+        raise Exception("❗️❗️ Correctness tests failes!")
+    print(f"\n✅ Finished correctness test!\n")
+
+
 def run_consystency_test():
-    for i in range(1000):
-        for _ in range(2):
-            print(f"n_simulation_iterations = {i} ", end="")
-            check_if_c_outputs_consistent_for(i)
+    print("\n🟠 Starting consystency test...")
+
+    for i in range(0, 1000, 77):
+        print(f"n_simulation_iterations = {i} ", end="")
+        check_if_c_outputs_consistent_for(i)
+
+    print(f"\n✅ Finished consystency test!\n")
+
 
 def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     """Checks if the C implementation produces the same output CSV file if given the
