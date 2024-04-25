@@ -63,7 +63,7 @@ def run_timing_test(start: int, stop: int, step: int):
             writer.writerows(data)
 
     # make plot
-    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/plot.py && cd -
+    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot.py && cd -
 
     print(f"\n✅ Saved plot at '{root_dir_for_this_test}/plot.png'")
 
