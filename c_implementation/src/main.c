@@ -184,7 +184,7 @@ int main(int argc, char* argv[]){
     unsigned int pit = 50;
     double dt = 0.001;
     size_t matrix_size = 41;
-    double rho = 1.0, nu = 0.01;
+    double rho = 1.0, nu = 0.1;
 
     struct simulation * sim = arguments.implementation.create(
         matrix_size, matrix_size, rho, nu
