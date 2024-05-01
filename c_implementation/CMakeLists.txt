@@ -7,6 +7,7 @@ add_subdirectory(external/cargs)
 add_executable(cavity_flow src/baseline_simulation.c src/main.c
 		           src/simulation.c
 			   src/preallocated_simulation.c
+			   src/faster_math_simulation.c
 			   src/utils.c)
 
 target_compile_options(cavity_flow PUBLIC -O3 -Wall -Wextra)

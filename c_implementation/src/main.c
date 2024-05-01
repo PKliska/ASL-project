@@ -6,6 +6,7 @@
 #include "simulation.h"
 #include "baseline_simulation.h"
 #include "preallocated_simulation.h"
+#include "faster_math_simulation.h"
 #include "tsc_x86.h"
 
 #define NUM_RUNS 30
@@ -24,6 +25,9 @@ static const struct implementation IMPLEMENTATIONS[] = {
     },
     {.name = "preallocated",
      .create = (struct simulation *(*)(size_t, size_t, double, double))new_preallocated_simulation
+    },
+    {.name = "faster_math",
+     .create = (struct simulation *(*)(size_t, size_t, double, double))new_faster_math_simulation
     }
 };
 
