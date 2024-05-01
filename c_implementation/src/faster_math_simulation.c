@@ -66,7 +66,7 @@ static void pressure_poisson(faster_math_simulation* sim,
     const double r2sqdxsqdy = ((long long) (nx-1)*(nx-1)*(ny-1)*(ny-1))
                                            /(8.0*
                                           ((nx-1)*(nx-1)+(ny-1)*(ny-1)));
-    // 2 flops
+    // ? flops
     for(unsigned int q=0;q<pit;q++){
         //Swap p and pn
         double *tmp = sim->p;
@@ -102,11 +102,14 @@ static void step_faster_math_simulation(
     
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
-    const double dx = 2.0 / (nx - 1);
-    const double dy = 2.0 / (ny - 1);
-    // 2 flops
     const double rho = sim->rho;
     const double nu = sim->nu;
+    const double dtdx = dt*(nx - 1)/2.0;
+    const double dtdy = dt*(ny - 1)/2.0;
+    const double dtsqdx = dt*(nx - 1)*(nx - 1)/4.0;
+    const double dtsqdy = dt*(ny - 1)*(ny - 1)/4.0;
+    const double dt2rhodx = dt*(nx - 1)/(4.0*rho);
+    const double dt2rhody = dt*(ny - 1)/(4.0*rho);
     //Swap u and un
     double* tmp = sim->u;
     sim->u = sim->un;
@@ -139,24 +142,24 @@ static void step_faster_math_simulation(
             const double p_below  =  p[ny*(i+1) + j  ];
             const double p_above  =  p[ny*(i-1) + j  ];
             u[ny*i+j] = (un_here -
-                    un_here * dt / dx *
+                    un_here * dtdx *
                     (un_here - un_left) -
-                    vn_here * dt / dy *
+                    vn_here * dtdy *
                     (un_here - un_above) -
-                    dt / (2 * rho * dx) * (p_right - p_left) +
-                    nu * (dt / sq(dx) *
+                    dt2rhodx * (p_right - p_left) +
+                    nu * (dtsqdx *
                 (un_right - 2 * un_here + un_left) +
-                dt / sq(dy) *
+                dtsqdy *
                 (un_below - 2 * un_here + un_above)));
             v[ny*i+j] = (vn_here -
-                un_here * dt / dx *
+                un_here * dtdx *
                 (vn_here - vn_left) -
-                vn_here * dt / dy *
+                vn_here * dtdy *
                 (vn_here - vn_above) -
-                dt / (2 * rho * dy) * (p_below - p_above) +
-                    nu * (dt / sq(dx) *
+                dt2rhody * (p_below - p_above) +
+                    nu * (dtsqdx *
                 (vn_right - 2 * vn_here + vn_left) +
-                dt / sq(dy) *
+                dtsqdy *
                 (vn_below - 2 * vn_here + vn_above)));
             }
         }
@@ -172,7 +175,7 @@ static void step_faster_math_simulation(
             v[ny*0      + j] = 0;
             v[ny*(nx-1) + j] = 0;
         }
-} // flops 91 * (nx-2)*(ny-2) + 22 * (nx-2)(ny-2)*pit + 4
+} // flops ? 
 
 /* Advance the simulation sim by steps steps of size dt, using pit
  * iterations for the calculation of pressure.
@@ -183,7 +186,7 @@ void advance_faster_math_simulation(faster_math_simulation* sim,
     for(unsigned int i=0;i<steps;i++){
         step_faster_math_simulation(sim, pit, dt);
     }
-} // Flops (91 * (nx-2)*(ny-2) + 22 * (nx-2)(ny-2)*pit + 4) * steps
+} // Flops ?
 
 
 void write_faster_math_simulation(faster_math_simulation* sim,
