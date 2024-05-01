@@ -27,9 +27,10 @@ static void build_up_b(const faster_math_simulation* sim,
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
     const double rho = sim->rho;
-    const double dx = 2.0 / (nx - 1);
-    const double dy = 2.0 / (ny - 1);
-    // 2 flops
+    const double x_mult = (nx - 1) / 4.0;
+    const double y_mult = (ny - 1) / 4.0;
+    const double rdt = 1.0 / dt;
+    // ? flops
     const double *restrict u = sim->u;
     const double *restrict v = sim->v;
     for(size_t i=1;i<nx - 1;i++){
@@ -42,25 +43,29 @@ static void build_up_b(const faster_math_simulation* sim,
         const double v_right = v[ny*i     + j+1];
         const double v_below = v[ny*(i+1) + j  ];
         const double v_above = v[ny*(i-1) + j  ];
-        b[i*ny+j] = rho * (1 / dt *
-              ((u_right - u_left) / (2 * dx)
-              +(v_below - v_above) / (2 * dy))
-              -sq((u_right - u_left) / (2 * dx))
-              -2*((u_below - u_above) / (2 * dy)
-             *(v_right - v_left) / (2 * dx))
-              -sq((v_below - v_above) / (2 * dy)));
+        b[i*ny+j] = rho * (rdt *
+              ((u_right - u_left) * x_mult
+              +(v_below - v_above) * y_mult)
+              -sq((u_right - u_left) * x_mult)
+              -2*((u_below - u_above) * y_mult
+             *(v_right - v_left) * x_mult)
+              -sq((v_below - v_above) * y_mult));
 
     }
     }
-} // 29(nx-2)(ny-2) + 2 flops
+} // ? flops
 
 static void pressure_poisson(faster_math_simulation* sim,
                  unsigned int pit){
     double *restrict b = sim->b;
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
-    const double dx = 2.0 / (nx - 1);
-    const double dy = 2.0 / (ny - 1);
+    const double sqdx = sq(2.0 / (nx - 1));
+    const double sqdy = sq(2.0 / (ny - 1));
+    const double sqdxsqdy = sqdx * sqdy;
+    const double r2sqdxsqdy = ((long long) (nx-1)*(nx-1)*(ny-1)*(ny-1))
+                                           /(8.0*
+                                          ((nx-1)*(nx-1)+(ny-1)*(ny-1)));
     // 2 flops
     for(unsigned int q=0;q<pit;q++){
         //Swap p and pn
@@ -76,11 +81,9 @@ static void pressure_poisson(faster_math_simulation* sim,
             const double pn_right = pn[ny*i     + j+1];
             const double pn_below = pn[ny*(i+1) + j  ];
             const double pn_above = pn[ny*(i-1) + j  ];
-            p[i*ny+j] = ((pn_right + pn_left) * sq(dy)
-                            +(pn_below + pn_above) * sq(dx)) /
-                    (2 * (sq(dx) + sq(dy))) -
-                    sq(dx) * sq(dy) / (2 * (sq(dx) + sq(dy))) *
-                    b[i*ny+j];
+            p[i*ny+j] = ((pn_right + pn_left) * sqdy
+                        +(pn_below + pn_above) * sqdx
+                        - sqdxsqdy * b[i*ny + j])*r2sqdxsqdy;
             }
         }
         for(size_t i=0;i<nx;i++) p[ny*i      + ny-1] = p[ny*i + ny-2];
