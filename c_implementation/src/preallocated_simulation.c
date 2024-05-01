@@ -135,6 +135,7 @@ static void step_preallocated_simulation(
     pressure_poisson(sim, pit);
     for(size_t i=1;i<nx-1;i++){
         for(size_t j=1;j<ny-1;j++){
+			
             const double un_here  = un[ny*i     + j  ];
             const double un_left  = un[ny*i     + j-1];
             const double un_right = un[ny*i     + j+1];
