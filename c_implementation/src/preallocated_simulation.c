@@ -111,6 +111,8 @@ static void pressure_poisson(struct preallocated_simulation* sim,
 static void step_preallocated_simulation(
     struct preallocated_simulation* sim, unsigned int pit, double dt){
     
+    build_up_b(sim, dt);
+    pressure_poisson(sim, pit);
     const size_t nx = sim->nx;
     const size_t ny = sim->ny;
     const double dx = 2.0 / (nx - 1);
@@ -131,8 +133,6 @@ static void step_preallocated_simulation(
     double *restrict p = sim->p;
     double *restrict un = sim->un;
     double *restrict vn = sim->vn;
-    build_up_b(sim, dt);
-    pressure_poisson(sim, pit);
     for(size_t i=1;i<nx-1;i++){
         for(size_t j=1;j<ny-1;j++){
             const double un_here  = un[ny*i     + j  ];
