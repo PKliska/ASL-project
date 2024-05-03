@@ -14,20 +14,20 @@
 
 struct implementation {
     const char* name;
-    struct simulation* (*create)(size_t nx, size_t ny,
+    struct simulation* (*create)(size_t dimension, double size,
                                  double rho, double nu);
 };
 
 // @Pavel casting
 static const struct implementation IMPLEMENTATIONS[] = {
     {.name = "baseline",
-     .create = (struct simulation *(*)(size_t, size_t, double, double))new_baseline_simulation
+     .create = (struct simulation *(*)(size_t, double, double, double))new_baseline_simulation
     },
     {.name = "preallocated",
-     .create = (struct simulation *(*)(size_t, size_t, double, double))new_preallocated_simulation
+     .create = (struct simulation *(*)(size_t, double, double, double))new_preallocated_simulation
     },
     {.name = "faster_math",
-     .create = (struct simulation *(*)(size_t, size_t, double, double))new_faster_math_simulation
+     .create = (struct simulation *(*)(size_t, double, double, double))new_faster_math_simulation
     }
 };
 
@@ -42,6 +42,8 @@ struct arguments {
     bool should_time;
     // which implementation
     const char *impl_name; // @Pavel I moved this here, somehow only like so it wokrs
+    unsigned int dimension;
+    double size;
 };
 
 static struct cag_option options[] = {
@@ -69,7 +71,19 @@ static struct cag_option options[] = {
      .access_letters = "t",
      .access_name = "time",
      .description = "Time the execution of the simulation"
-    }
+    },
+    {.identifier = 'd',
+     .access_letters = "d",
+     .access_name = "dimension",
+     .value_name = "DIMENSION",
+     .description = "The dimensions of the simulation grid"
+    },
+    {.identifier = 's',
+     .access_letters = "s",
+     .access_name = "size",
+     .value_name = "SIZE",
+     .description = "The physical size of the simulated cavity"
+    },
 };
 
 static void parse_args(struct arguments* args, int argc, char* argv[]){
@@ -116,6 +130,22 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                 break;
             case 't':
                 args->should_time = true;
+                break;
+            case 's':
+                const char* size_str = cag_option_get_value(&context);
+                if(!size_str){
+                    fputs("error: option s requires a size", stderr);
+                    exit(-1);
+                }
+                sscanf(size_str, "%lf", &args->size);
+                break;
+            case 'd':
+                const char* dimension_str = cag_option_get_value(&context);
+                if(!dimension_str){
+                    fputs("error: option d requires a size", stderr);
+                    exit(-1);
+                }
+                sscanf(dimension_str, "%u", &args->dimension);
                 break;
             case '?':
                 cag_option_print_error(&context, stderr);
@@ -176,7 +206,9 @@ int main(int argc, char* argv[]){
         .output_file = "sim.csv",
         .num_iter = 100,
         .implementation = IMPLEMENTATIONS[0],
-        .should_time = false
+        .should_time = false,
+        .dimension = 41,
+        .size = 2.0
     };
 
     parse_args(&arguments, argc, argv);
@@ -187,11 +219,10 @@ int main(int argc, char* argv[]){
 
     unsigned int pit = 50;
     double dt = 0.001;
-    size_t matrix_size = 41;
     double rho = 1.0, nu = 0.1;
 
     struct simulation * sim = arguments.implementation.create(
-        matrix_size, matrix_size, rho, nu
+        arguments.dimension, arguments.size, rho, nu
     );
 
     if (arguments.should_time) {

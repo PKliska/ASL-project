@@ -6,7 +6,7 @@
 typedef struct preallocated_simulation faster_math_simulation;
 
 faster_math_simulation* new_faster_math_simulation(
-    size_t nx, size_t ny, double rho, double nu);
+    size_t dimension, double size, double rho, double nu);
 
 void advance_faster_math_simulation(faster_math_simulation* sim,
                                  unsigned int steps, unsigned int pit,
