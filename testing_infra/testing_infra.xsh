@@ -15,10 +15,10 @@ def main():
 
     # based on arguments, run timing plot, consystency, correctness, etc.
     if args.run == "timing":
-        if args.short:
-            run_timing_test(100, 5000, 2000)
-        else:
+        if args.long_test:
             run_timing_test(100, 100000, 10000)
+        else:
+            run_timing_test(100, 5000, 2000)
     elif args.run == "correctness":
         run_correctness_test()
     elif args.run == "consystency":
@@ -26,10 +26,10 @@ def main():
     elif args.run == "all":
         run_correctness_test()
         run_consystency_test()
-        if args.short:
-            run_timing_test(100, 5000, 2000)
-        else:
+        if args.long_test:
             run_timing_test(100, 100000, 10000)
+        else:
+            run_timing_test(100, 5000, 2000)
 
     else:
         raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
@@ -39,8 +39,8 @@ def parse_cli_args():
     argparser.add_argument("--run", metavar="ACTION", default="all", help="Action to execute (e.g. run correctness tests)")
     argparser.add_argument("--implementation", default="baseline", help="Chose which implementation to run")
     group = argparser.add_mutually_exclusive_group()
-    group.add_argument("--short", action="store_true", default=True, help="Quickly gets some (rough) results")
-    group.add_argument("--long", action="store_true", help="Slowly gets detailed results, runs more iterations of the algo")
+    group.add_argument("--short-test", action="store_true", default=True, help="Quickly gets some (rough) results")
+    group.add_argument("--long-test", action="store_true", help="Slowly gets detailed results, runs more iterations of the algo")
 
     args = argparser.parse_args()
     return args
