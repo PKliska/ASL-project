@@ -91,7 +91,7 @@ def run_correctness_test():
             pass
 
     if is_some_result_incorrect:
-        raise Exception("❗️❗️ Correctness tests failes!")
+        raise Exception("❗️❗️ Correctness tests failed!")
     print(f"\n✅ Finished correctness test!\n")
 
 
