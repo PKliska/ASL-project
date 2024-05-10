@@ -25,7 +25,10 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 
 # actually run the testing infrastructure
-./run-script.sh ./testing_infra.xsh # runs all tests (correctness, consystency & timing)
+./run-script.sh ./testing_infra.xsh # runs all tests (correctness, consystency & timing) for baseline
+
+# choose which implementation to test, if not implementation passed "baseline" is used
+./run-script.sh ./testing_infra.xsh --implementation preallocated
 
 # runs just the (short) timing test to generate the plot, quick but only times the algo for 3 "sizes"
 ./run-script.sh ./testing_infra.xsh --run timing --short

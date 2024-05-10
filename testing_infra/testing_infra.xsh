@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 
 def main():
     args = parse_cli_args()
-    set_global_variables()
+    set_global_variables(args)
 
     recompile_c_implementation()
     mkdir --parents "$TESTING_DIR"
@@ -37,6 +37,7 @@ def main():
 def parse_cli_args():
     argparser = ArgumentParser(description="")
     argparser.add_argument("--run", metavar="ACTION", default="all", help="Action to execute (e.g. run correctness tests)")
+    argparser.add_argument("--implementation", default="baseline", help="Chose which implementation to run")
     group = argparser.add_mutually_exclusive_group()
     group.add_argument("--short", action="store_true", default=True, help="Quickly gets some (rough) results")
     group.add_argument("--long", action="store_true", help="Slowly gets detailed results, runs more iterations of the algo")
@@ -95,7 +96,7 @@ def run_correctness_test():
 
 
 def run_consystency_test():
-    print("\n🟠 Starting consystency test...")
+    print(f"\n🟠 Starting consystency test for '{$IMPLEMENTATION}'...")
 
     for i in range(0, 1000, 77):
         print(f"n_simulation_iterations = {i} ", end="")
@@ -108,11 +109,12 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     """Checks if the C implementation produces the same output CSV file if given the
     same arguments."""
 
-    c_output_path_1 = f"{$TESTING_DIR}/output_c_1.csv"
-    c_output_path_2 = f"{$TESTING_DIR}/output_c_2.csv"
+    mkdir -p "$TESTING_DIR/consystency/"
+    c_output_path_1 = f"{$TESTING_DIR}/consystency/output_c_1_{$IMPLEMENTATION}.csv"
+    c_output_path_2 = f"{$TESTING_DIR}/consystency/output_c_2_{$IMPLEMENTATION}.csv"
 
-    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I "baseline" --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
-    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I "baseline" --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I "$IMPLEMENTATION" --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
+    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow -I "$IMPLEMENTATION" --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := has_command_failed(compare_files_command):
@@ -130,8 +132,8 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
     python ./python_implementation.py @(python_output_path) @(n_simulation_iterations)
 
     # run C implementation & save output
-    c_output_path = f"{root_dir_for_this_test}/output_c.csv"
-    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
+    c_output_path = f"{root_dir_for_this_test}/output_c_{$IMPLEMENTATION}.csv"
+    $C_IMPLEMENTATION_DIR/build/bin/cavity_flow  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )
@@ -143,12 +145,13 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
 
 
 ## HELPER FUNCTIONS
-def set_global_variables():
+def set_global_variables(args):
     ## VARS FOR THIS PROGRAM
     $TESTING_INFRA_ROOT_DIR = Path(__file__).parent.resolve(strict=True)
     $C_IMPLEMENTATION_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/../c_implementation").resolve(strict=True)
 
     $TESTING_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/.test_results").resolve(strict=True)
+    $IMPLEMENTATION = args.implementation
 
     ## XONSH
     # throw error if bash command fails, otherwise we silently ignore the error
