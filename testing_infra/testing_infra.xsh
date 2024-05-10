@@ -78,7 +78,7 @@ def run_timing_test(start: int, stop: int, step: int):
 def run_correctness_test():
     print("\n🟠 Starting correctness test...")
 
-    iterations_which_to_test = [0, 1] + list(range(0, 1000, 77)) # test for 0, 1 & some odd ones just in case
+    iterations_which_to_test = list(range(0, 10)) + list(range(0, 1000, 77)) # test for 0, 1 & some odd ones just in case
     iterations_which_to_test = sorted(list(set(iterations_which_to_test))) # remove duplicates & sort
 
     is_some_result_incorrect = False
