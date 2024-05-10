@@ -84,6 +84,11 @@ static struct cag_option options[] = {
      .value_name = "SIZE",
      .description = "The physical size of the simulated cavity"
     },
+    {.identifier = 'l',
+     .access_letters = "l",
+     .access_name = "list",
+     .description = "Gives a list of the implementations, comma separated"
+    },
 };
 
 static void parse_args(struct arguments* args, int argc, char* argv[]){
@@ -146,6 +151,13 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                     exit(-1);
                 }
                 sscanf(dimension_str, "%u", &args->dimension);
+                break;
+            case 'l':
+                for(size_t i = 0; i < sizeof(IMPLEMENTATIONS)/sizeof(IMPLEMENTATIONS[0]); i++){
+                    fprintf(stdout, "%s,", IMPLEMENTATIONS[i].name);
+                }
+                fputc('\n', stderr);
+                exit(0);
                 break;
             case '?':
                 cag_option_print_error(&context, stderr);

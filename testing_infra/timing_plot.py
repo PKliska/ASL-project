@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -15,7 +17,7 @@ def plot_csv_files(csv_files, labels):
         # for us nx=ny=41 and pit = 50, so
         # num_flops = 1811515 * steps
         df = pd.read_csv(csv_file)
-        performance = 1811515 * df['n_simulation_iterations'] / df['n_cycles'] 
+        performance = 1811515 * df['n_simulation_iterations'] / df['n_cycles']
         df['n_cycles'] = performance
         sns.lineplot(data=df, x="n_simulation_iterations", y="n_cycles", label=label, color=color)
 
@@ -34,7 +36,7 @@ def plot_csv_files(csv_files, labels):
     plt.savefig("plot")
     plt.show()
 
-csv_files = ["baseline.csv", "preallocated.csv"]  # List of CSV files
-custom_labels = ["Baseline", "Preallocated"]  # List of custom labels
+csv_files = (sys.argv[1]).split(",")  # List of CSV files, comma separeted
+custom_labels = [filename.removesuffix(".csv") for filename in csv_files]  # List of custom labels
 plot_csv_files(csv_files, custom_labels)
 

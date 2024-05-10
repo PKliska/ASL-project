@@ -50,7 +50,7 @@ def run_timing_test(start: int, stop: int, step: int):
 
     current_time = strftime("%Y-%m-%d %H:%M:%S")
 
-    for implementation in ["baseline", "preallocated"]:
+    for implementation in get_all_implementations():
         data = []
         for n_simulation_iterations in range(start, stop, step):
             output = $( $C_BINARY -I @(implementation) -t --num_iter @(n_simulation_iterations) )
@@ -69,8 +69,11 @@ def run_timing_test(start: int, stop: int, step: int):
             writer.writerow(["n_simulation_iterations", "n_cycles"])
             writer.writerows(data)
 
+    all_implementations = [f"{i}.csv" for i in get_all_implementations()]
+    all_implementations_comma_sep = ",".join(all_implementations)
+
     # make plot
-    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot.py && cd -
+    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot.py @(all_implementations_comma_sep)  && cd -
 
     print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot.png'\n")
 
@@ -160,6 +163,11 @@ def set_global_variables(args):
     $XONSH_SHOW_TRACEBACK = True
     # for bash commands, print out how they were invoked (with which concrete args)
     # $XONSH_TRACE_SUBPROC = True
+
+def get_all_implementations() -> str:
+    implementations_string: str = $( $C_BINARY -l )
+    implementations = implementations_string.split(",")[:-1]
+    return implementations
 
 def recompile_c_implementation():
     print("🎬 Re-compiling C implementation...")
