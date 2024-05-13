@@ -52,7 +52,8 @@ static void build_up_b(const faster_math_simulation* sim,
 
     }
     }
-} // ? flops
+}
+ // ? flops
 
 static void pressure_poisson(faster_math_simulation* sim,
                  unsigned int pit){
@@ -83,7 +84,8 @@ static void pressure_poisson(faster_math_simulation* sim,
         for(size_t j=0;j<d;j++) p[d*0     + j  ] = p[d*1 + j];
         for(size_t j=0;j<d;j++) p[d*(d-1) + j  ] = 0;
     }
-} // 22 * (d-2)(d-2)*pit + 2
+}
+// 22 * (d-2)(d-2)*pit + 2
 
 /* Advance the simulation sim by one step of size dt using pit iterations
  * for the calculation of pressure. Use the array b for the calculation
@@ -95,10 +97,15 @@ static void step_faster_math_simulation(
     build_up_b(sim, dt);
     pressure_poisson(sim, pit);
     const size_t d = sim->d;
+    const double ds = sim->size / (d - 1);
+
     const double rho = sim->rho;
     const double nu = sim->nu;
-    const double dtds = dt*(d - 1)/(2*sim->size);
-    const double dtsqds = dt*(d - 1)*(d - 1)/(2*sim->size);
+
+    const double dtds = dt*(d - 1)/(sim->size);
+    //const double dtds = dt*(d - 1)/(2*sim->size);
+    const double dtsqds = dt*(d - 1)*(d - 1)/(sim->size*sim->size);
+    //const double dtsqds = dt*(d - 1)*(d - 1)/(2*sim->size);
     const double dt2rhods = dt*(d - 1)/(2*sim->size*rho);
     //Swap u and un
     double* tmp = sim->u;
@@ -135,6 +142,8 @@ static void step_faster_math_simulation(
                     dt2rhods * (p_right - p_left) +
                     nu * dtsqds *
                 (un_right + un_left + un_below + un_above - 4*un_here);
+
+
             v[d*i+j] = vn_here
                       -dtds * (un_here * (vn_here - vn_left) +
                                vn_here * (vn_here - vn_above))
@@ -142,6 +151,7 @@ static void step_faster_math_simulation(
                       +nu * dtsqds *
                        (vn_right + vn_left + vn_below + vn_above
                         - 4*vn_here);
+            
             }
         }
         for(size_t i=0;i<d;i++){
