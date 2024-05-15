@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "baseline_simulation.h"
 
-// @Pavel here i added casting
 static const struct simulation_vtable_ BASELINE_SIMULATION_VTABLE_[] = {{
     .advance=(void (*)(struct simulation *, unsigned int, unsigned int, double))advance_baseline_simulation,
     .write=(void (*)(const struct simulation *, FILE *))write_baseline_simulation,
@@ -141,10 +140,10 @@ static void step_baseline_simulation(struct baseline_simulation* sim,
 					vn_here * dt / ds *
 					(un_here - un_above) -
 					dt / (2 * rho * ds) * (p_right - p_left) +
-					nu * (dt / sq(ds) *
+					nu * ( dt / sq(ds) *
 				(un_right - 2 * un_here + un_left) +
 				dt / sq(ds) *
-				(un_below - 2 * un_here + un_above)));
+				(un_below - 2 * un_here + un_above) ) );
 			// FLOPS: 14 mul, 5 div, 8 sub, 4 add  (d-1)*(d-1)
 
 			v[d*i+j] = (vn_here -

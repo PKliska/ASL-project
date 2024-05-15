@@ -81,7 +81,7 @@ def run_timing_test(start: int, stop: int, step: int):
 def run_correctness_test():
     print("\n🟠 Starting correctness test...")
 
-    iterations_which_to_test = list(range(0, 10)) + list(range(0, 1000, 77)) # test for 0, 1 & some odd ones just in case
+    iterations_which_to_test = list(range(10, 101, 10)) # test for 0, 1 & some odd ones just in case
     iterations_which_to_test = sorted(list(set(iterations_which_to_test))) # remove duplicates & sort
 
     is_some_result_incorrect = False
@@ -101,7 +101,7 @@ def run_correctness_test():
 def run_consystency_test():
     print(f"\n🟠 Starting consystency test for '{$IMPLEMENTATION}'...")
 
-    for i in range(0, 1000, 77):
+    for i in range(10, 101, 10):
         print(f"n_simulation_iterations = {i} ", end="")
         check_if_c_outputs_consistent_for(i)
 
@@ -116,8 +116,8 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     c_output_path_1 = f"{$TESTING_DIR}/consystency/output_c_1_{$IMPLEMENTATION}.csv"
     c_output_path_2 = f"{$TESTING_DIR}/consystency/output_c_2_{$IMPLEMENTATION}.csv"
 
-    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_1) --num_iter=@(n_simulation_iterations)
-    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_2) --num_iter=@(n_simulation_iterations)
+    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_1) --dimension=@(n_simulation_iterations)
+    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_2) --dimension=@(n_simulation_iterations)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := has_command_failed(compare_files_command):
@@ -136,7 +136,7 @@ def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 1
 
     # run C implementation & save output
     c_output_path = f"{root_dir_for_this_test}/output_c_{$IMPLEMENTATION}.csv"
-    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --num_iter=@(n_simulation_iterations)
+    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(n_simulation_iterations)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )

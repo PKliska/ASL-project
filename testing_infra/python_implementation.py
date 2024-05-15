@@ -4,8 +4,8 @@ import sys
 import numpy
 
 
-nx = 41
-ny = 41
+nx = 5
+ny = 5
 nt = 500
 nit = 50
 c = 1
@@ -100,16 +100,25 @@ def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
     return u, v, p
 
 if __name__ == '__main__':
+
+    custom_nt = sys.argv[2]
+    if has_user_provided_destination := (custom_nt is not None) and (custom_nt != ""):
+        nx = int(custom_nt)
+        ny = nx
+    else:
+        nx = -1
+        ny = -1
+
+    dx = 2 / (nx - 1)
+    dy = 2 / (ny - 1)
+
+    nt = 100
+
     u = numpy.zeros((ny, nx))
     v = numpy.zeros((ny, nx))
     p = numpy.zeros((ny, nx))
     b = numpy.zeros((ny, nx))
-
-    custom_nt = sys.argv[2]
-    if has_user_provided_destination := (custom_nt is not None) and (custom_nt != ""):
-        nt = int(custom_nt)
-    else:
-        nt = 100
+    
 
     u, v, p = cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu)
 
