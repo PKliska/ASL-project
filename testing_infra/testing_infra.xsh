@@ -133,7 +133,7 @@ def check_if_c_output_matches_python_output_for(matrix_dimension):
     mkdir --parents @(root_dir_for_this_test)
 
     # run python implementation & save output
-    python_output_path = f"{root_dir_for_this_test}/output_python_1.csv"
+    python_output_path = f"{root_dir_for_this_test}/output_python.csv"
     python ./python_implementation.py @(python_output_path) @(matrix_dimension)
 
     # run C implementation & save output
