@@ -16,9 +16,9 @@ def main():
     # based on arguments, run timing plot, consystency, correctness, etc.
     if args.run == "timing":
         if args.long_test:
-            run_timing_test(100, 100000, 10000)
+            run_timing_test(2, 8, 10000)
         else:
-            run_timing_test(100, 5000, 2000)
+            run_timing_test(2, 12, 2000)
     elif args.run == "correctness":
         run_correctness_test()
     elif args.run == "consystency":
@@ -27,9 +27,9 @@ def main():
         run_correctness_test()
         run_consystency_test()
         if args.long_test:
-            run_timing_test(100, 100000, 10000)
+            run_timing_test(2, 6, 2000)
         else:
-            run_timing_test(100, 5000, 2000)
+            run_timing_test(2, 6, 2000)
 
     else:
         raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
@@ -52,11 +52,11 @@ def run_timing_test(start: int, stop: int, step: int):
 
     for implementation in get_all_implementations():
         data = []
-        for n_simulation_iterations in range(start, stop, step):
-            output = $( $C_BINARY -I @(implementation) -t --num_iter @(n_simulation_iterations) )
+        for n_simulation_iterations in [2 ** i for i in range(start, stop)]:
+            output = $( $C_BINARY -I @(implementation) -t --dimension @(n_simulation_iterations) )
             n_cycles = float(output.strip().split()[-1])
 
-            print(f"Simulating {implementation} with n_iter={n_simulation_iterations} took {n_cycles} cycles ({n_cycles/(2.5*10**9)} sec)")
+            print(f"Simulating {implementation} with dimension={n_simulation_iterations} took {n_cycles} cycles ({n_cycles/(2.5*10**9)} sec)")
             data.append((n_simulation_iterations, n_cycles))
 
         print(data)

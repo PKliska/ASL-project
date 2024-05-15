@@ -17,12 +17,12 @@ def plot_csv_files(csv_files, labels):
         # for us nx=ny=41 and pit = 50, so
         # num_flops = 1811515 * steps
         df = pd.read_csv(csv_file)
-        performance = 1811515 * df['n_simulation_iterations'] / df['n_cycles']
-        df['n_cycles'] = performance
+        #performance = 1811515 * df['n_simulation_iterations'] / df['n_cycles']
+        df['n_cycles'] = df['n_cycles'] / FREQUENCY
         sns.lineplot(data=df, x="n_simulation_iterations", y="n_cycles", label=label, color=color)
 
-    plt.xlabel("n_simulation_iterations")
-    plt.ylabel("Performance")
+    plt.xlabel("Dimension")
+    plt.ylabel("Runtime")
     plt.legend()
     plt.grid(axis='y', alpha=0.7)
 
