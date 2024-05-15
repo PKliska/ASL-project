@@ -7,6 +7,8 @@ from argparse import ArgumentParser
 
 
 def main():
+    disable_turbo_boost()
+
     args = parse_cli_args()
     set_global_variables(args)
 
@@ -163,6 +165,16 @@ def set_global_variables(args):
     $XONSH_SHOW_TRACEBACK = True
     # for bash commands, print out how they were invoked (with which concrete args)
     # $XONSH_TRACE_SUBPROC = True
+
+def disable_turbo_boost():
+    if is_turbo_boost_enabled := $( sudo rdmsr -p0 0x1a0 -f 38:38 ) == "0\n":
+        print("✋🛑 Turbo boost is not disabled! Disabling turbo boost...")
+        wrmsr -p0 0x1a0 0x4000850089
+        wrmsr -p1 0x1a0 0x4000850089
+        wrmsr -p2 0x1a0 0x4000850089
+        wrmsr -p3 0x1a0 0x4000850089
+
+    print("✅ Turbo boost is disabled\n")
 
 def get_all_implementations() -> str:
     implementations_string: str = $( $C_BINARY -l )
