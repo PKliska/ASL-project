@@ -5,10 +5,11 @@
 
 set -e  # abort script at first error, when a command exits with non-zero status
 
-source /home/myboi/asl/peter/team22/testing_infra/.venv/bin/activate
+printf "Activating python virtual env... (venv needs to be in root dir of project)"
+source ../.venv/bin/activate
 
 if [ -z "$1" ]; then # first arg is not set
-    printf "Usage:\n    run-script.sh <PATH_TO_XONSH_SCRIPT>\n"
+    printf "Usage:\n    cd testing_infra\n    run-script.sh <PATH_TO_XONSH_SCRIPT>\n"
     exit 1
 fi
 
