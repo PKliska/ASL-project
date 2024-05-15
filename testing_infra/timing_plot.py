@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Frequency of the processor
-FREQUENCY = 2.5e9 # 2.5 GHz
+FREQUENCY = 3.4e9 # 3.4 GHz
 
 def plot_csv_files(csv_files, labels):
     sns.set_theme(style="dark")
@@ -17,20 +17,20 @@ def plot_csv_files(csv_files, labels):
         # for us nx=ny=41 and pit = 50, so
         # num_flops = 1811515 * steps
         df = pd.read_csv(csv_file)
-        #performance = 1811515 * df['n_simulation_iterations'] / df['n_cycles']
+        #performance = 1811515 * df['matrix_dimension'] / df['n_cycles']
         df['n_cycles'] = df['n_cycles'] / FREQUENCY
-        sns.lineplot(data=df, x="n_simulation_iterations", y="n_cycles", label=label, color=color)
+        sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label, color=color)
 
     plt.xlabel("Dimension")
     plt.ylabel("Runtime")
     plt.legend()
     plt.grid(axis='y', alpha=0.7)
 
-    # add show ticks for n_simulation_iterations for which we run the algo
-    plt.xticks(df["n_simulation_iterations"])
+    # add show ticks for matrix_dimension for which we run the algo
+    plt.xticks(df["matrix_dimension"])
 
     # add vertical lines at these places so that it's easier to see
-    for x in df["n_simulation_iterations"]:
+    for x in df["matrix_dimension"]:
         plt.axvline(x=x, color='w', linestyle='-', linewidth=1)
 
     plt.savefig("plot")

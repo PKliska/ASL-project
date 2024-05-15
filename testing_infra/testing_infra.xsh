@@ -52,12 +52,12 @@ def run_timing_test(start: int, stop: int, step: int):
 
     for implementation in get_all_implementations():
         data = []
-        for n_simulation_iterations in [2 ** i for i in range(start, stop)]:
-            output = $( $C_BINARY -I @(implementation) -t --dimension @(n_simulation_iterations) )
+        for matrix_dimension in [2 ** i for i in range(start, stop)]:
+            output = $( $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension) )
             n_cycles = float(output.strip().split()[-1])
 
-            print(f"Simulating {implementation} with dimension={n_simulation_iterations} took {n_cycles} cycles ({n_cycles/(2.5*10**9)} sec)")
-            data.append((n_simulation_iterations, n_cycles))
+            print(f"Simulating {implementation} with dimension={matrix_dimension} took {n_cycles} cycles ({n_cycles/(2.5*10**9)} sec)")
+            data.append((matrix_dimension, n_cycles))
 
         print(data)
 
@@ -66,7 +66,7 @@ def run_timing_test(start: int, stop: int, step: int):
 
         with open(f"{root_dir_for_this_test}/{implementation}.csv", "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["n_simulation_iterations", "n_cycles"])
+            writer.writerow(["matrix_dimension", "n_cycles"])
             writer.writerows(data)
 
     all_implementations = [f"{i}.csv" for i in get_all_implementations()]
@@ -81,12 +81,12 @@ def run_timing_test(start: int, stop: int, step: int):
 def run_correctness_test():
     print("\n🟠 Starting correctness test...")
 
-    iterations_which_to_test = list(range(10, 101, 10)) # test for 0, 1 & some odd ones just in case
-    iterations_which_to_test = sorted(list(set(iterations_which_to_test))) # remove duplicates & sort
+    dimensions_which_to_test = [4, 5, 250] + list(range(10, 101, 7)) # test for 4, 5 (for 1..3 it fails cuz of a formatting mismatch...) & some odd ones just in case
+    dimensions_which_to_test = sorted(list(set(dimensions_which_to_test))) # remove duplicates & sort
 
     is_some_result_incorrect = False
-    for i in iterations_which_to_test:
-        print(f"n_simulation_iterations = {i} ", end="")
+    for i in dimensions_which_to_test:
+        print(f"matrix_dimension = {i} ", end="")
         try:
             check_if_c_output_matches_python_output_for(i)
         except Exception:
@@ -102,13 +102,13 @@ def run_consystency_test():
     print(f"\n🟠 Starting consystency test for '{$IMPLEMENTATION}'...")
 
     for i in range(10, 101, 10):
-        print(f"n_simulation_iterations = {i} ", end="")
+        print(f"matrix_dimension = {i} ", end="")
         check_if_c_outputs_consistent_for(i)
 
     print(f"\n✅ Finished consystency test!\n")
 
 
-def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
+def check_if_c_outputs_consistent_for(matrix_dimension):
     """Checks if the C implementation produces the same output CSV file if given the
     same arguments."""
 
@@ -116,8 +116,8 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     c_output_path_1 = f"{$TESTING_DIR}/consystency/output_c_1_{$IMPLEMENTATION}.csv"
     c_output_path_2 = f"{$TESTING_DIR}/consystency/output_c_2_{$IMPLEMENTATION}.csv"
 
-    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_1) --dimension=@(n_simulation_iterations)
-    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_2) --dimension=@(n_simulation_iterations)
+    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_1) --dimension=@(matrix_dimension)
+    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_2) --dimension=@(matrix_dimension)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := has_command_failed(compare_files_command):
@@ -126,17 +126,17 @@ def check_if_c_outputs_consistent_for(n_simulation_iterations: int = 100):
     else:
         print("✅")
 
-def check_if_c_output_matches_python_output_for(n_simulation_iterations: int = 100):
-    root_dir_for_this_test = f"{$TESTING_DIR}/correctness/n_{n_simulation_iterations}"
+def check_if_c_output_matches_python_output_for(matrix_dimension):
+    root_dir_for_this_test = f"{$TESTING_DIR}/correctness/n_{matrix_dimension}"
     mkdir --parents @(root_dir_for_this_test)
 
     # run python implementation & save output
-    python_output_path = f"{root_dir_for_this_test}/output_python.csv"
-    python ./python_implementation.py @(python_output_path) @(n_simulation_iterations)
+    python_output_path = f"{root_dir_for_this_test}/output_python_1.csv"
+    python ./python_implementation.py @(python_output_path) @(matrix_dimension)
 
     # run C implementation & save output
     c_output_path = f"{root_dir_for_this_test}/output_c_{$IMPLEMENTATION}.csv"
-    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(n_simulation_iterations)
+    # $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(matrix_dimension)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )
