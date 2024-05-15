@@ -4,26 +4,6 @@ import sys
 import numpy
 
 
-nx = 5
-ny = 5
-nt = 500
-nit = 50
-c = 1
-dx = 2 / (nx - 1)
-dy = 2 / (ny - 1)
-x = numpy.linspace(0, 2, nx)
-y = numpy.linspace(0, 2, ny)
-X, Y = numpy.meshgrid(x, y)
-
-rho = 1
-nu = .1
-dt = .001
-
-u = numpy.zeros((ny, nx))
-v = numpy.zeros((ny, nx))
-p = numpy.zeros((ny, nx))
-b = numpy.zeros((ny, nx))
-
 def build_up_b(b, rho, dt, u, v, dx, dy):
     b[1:-1, 1:-1] = (rho * (1 / dt *
                             ((u[1:-1, 2:] - u[1:-1, 0:-2]) /
@@ -35,7 +15,7 @@ def build_up_b(b, rho, dt, u, v, dx, dy):
 
     return b
 
-def pressure_poisson(p, dx, dy, b):
+def pressure_poisson(p, dx, dy, b, nit):
     pn = numpy.empty_like(p)
     pn = p.copy()
 
@@ -54,7 +34,7 @@ def pressure_poisson(p, dx, dy, b):
 
     return p
 
-def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
+def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu, nx, ny, nit):
     un = numpy.empty_like(u)
     vn = numpy.empty_like(v)
     b = numpy.zeros((ny, nx))
@@ -64,7 +44,7 @@ def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
         vn = v.copy()
 
         b = build_up_b(b, rho, dt, u, v, dx, dy)
-        p = pressure_poisson(p, dx, dy, b)
+        p = pressure_poisson(p, dx, dy, b, nit)
 
         u[1:-1, 1:-1] = (un[1:-1, 1:-1] -
                          un[1:-1, 1:-1] * dt / dx *
@@ -100,27 +80,33 @@ def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
     return u, v, p
 
 if __name__ == '__main__':
+    rho = 1
+    nu = .1
+    dt = .001
+    nit = 50
 
-    custom_nt = sys.argv[2]
-    if has_user_provided_destination := (custom_nt is not None) and (custom_nt != ""):
-        nx = int(custom_nt)
-        ny = nx
+    custom_dimension = sys.argv[2]
+    if has_user_provided_custom_dimension := (custom_dimension is not None) and (custom_dimension != ""):
+        ny = nx = int(custom_dimension)
     else:
-        nx = -1
-        ny = -1
+        raise ValueError("Must provide an int value for matrix dimension (nx) as 2nd argument!")
+
+    # custom_nt = sys.argv[3]
+    # if has_user_provided_custom_nt := (custom_nt is not None) and (custom_nt != ""):
+    #     nt = int(custom_nt)
+    # else:
+    nt = 100 # that's what we use as default arg in the C implementation
+
 
     dx = 2 / (nx - 1)
     dy = 2 / (ny - 1)
-
-    nt = 100
 
     u = numpy.zeros((ny, nx))
     v = numpy.zeros((ny, nx))
     p = numpy.zeros((ny, nx))
     b = numpy.zeros((ny, nx))
-    
 
-    u, v, p = cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu)
+    u, v, p = cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu, nx, ny, nit)
 
     custom_destination = sys.argv[1]
     if has_user_provided_destination := (custom_destination is not None) and (custom_destination != ""):
