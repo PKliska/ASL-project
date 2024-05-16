@@ -42,6 +42,8 @@ static void build_up_b(const struct preallocated_simulation* sim,
     const size_t d = sim->d;
     const double rho = sim->rho;
     const double ds = sim->size / (d - 1);
+    // const double ds = 0.025;
+
     // 2 flops
     const double *restrict u = sim->u;
     const double *restrict v = sim->v;
@@ -72,6 +74,8 @@ static void pressure_poisson(struct preallocated_simulation* sim,
     double *restrict b = sim->b;
     const size_t d = sim->d;
     const double ds = sim->size / (d - 1);
+    // const double ds = 0.025;
+
     // 2 flops
     for(unsigned int q=0;q<pit;q++){
         //Swap p and pn
@@ -107,11 +111,13 @@ static void pressure_poisson(struct preallocated_simulation* sim,
 */
 static void step_preallocated_simulation(
     struct preallocated_simulation* sim, unsigned int pit, double dt){
-    
+
     build_up_b(sim, dt);
     pressure_poisson(sim, pit);
     const size_t d = sim->d;
     const double ds = sim->size / (d - 1);
+    // const double ds = 0.025;
+
     // 2 flops
     const double rho = sim->rho;
     const double nu = sim->nu;

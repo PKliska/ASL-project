@@ -137,12 +137,15 @@ static void parse_args(struct arguments* args, int argc, char* argv[]){
                 args->should_time = true;
                 break;
             case 's':
-                const char* size_str = cag_option_get_value(&context);
-                if(!size_str){
-                    fputs("error: option s requires a size", stderr);
-                    exit(-1);
-                }
-                sscanf(size_str, "%lf", &args->size);
+                fputs("error: not used anymore, overriden in main.c to a specific value", stderr);
+                exit(-1);
+
+                // const char* size_str = cag_option_get_value(&context);
+                // if(!size_str){
+                //     fputs("error: option s requires a size", stderr);
+                //     exit(-1);
+                // }
+                // sscanf(size_str, "%lf", &args->size);
                 break;
             case 'd':
                 const char* dimension_str = cag_option_get_value(&context);
@@ -232,6 +235,10 @@ int main(int argc, char* argv[]){
     unsigned int pit = 50;
     double dt = 0.001;
     double rho = 1.0, nu = 0.1;
+
+    // Basically mirrors the python implementation (dy = dx = 0.025) but in a more
+    // convoluted way to not break compatibility with the curent implementation of faster_math.
+    arguments.size = 0.025 * (arguments.dimension-1);
 
     struct simulation * sim = arguments.implementation.create(
         arguments.dimension, arguments.size, rho, nu

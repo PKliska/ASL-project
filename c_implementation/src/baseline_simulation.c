@@ -34,6 +34,7 @@ static void build_up_b(const struct baseline_simulation* sim,
     const size_t d = sim->d;
     const double rho = sim->rho;
     const double ds = sim->size / (d - 1);
+    // const double ds = 0.025;
     const double* u = sim->u;
     const double* v = sim->v;
 
@@ -64,6 +65,7 @@ static void pressure_poisson(struct baseline_simulation* sim,
 			     unsigned int pit, double* b){
     const size_t d = sim->d;
     const double ds = sim->size / (d - 1);
+    // const double ds = 0.025;
     const size_t bytes = d*d*sizeof(double);
     double* p = sim->p;
     double* pn = malloc(bytes);
@@ -106,6 +108,7 @@ static void step_baseline_simulation(struct baseline_simulation* sim,
 				     double dt){
     const size_t d = sim->d;
     const double ds = sim->size / (d - 1); // FLOPS: 1 div
+    // const double ds = 0.025; // FLOPS: 1 div
     const double rho = sim->rho;
     const double nu = sim->nu;
     double* u = sim->u;

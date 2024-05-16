@@ -97,9 +97,8 @@ if __name__ == '__main__':
     # else:
     nt = 100 # that's what we use as default arg in the C implementation
 
-
-    dx = 2 / (nx - 1)
-    dy = 2 / (ny - 1)
+    # basically equivalent to this "dy = dx = 0.025" but we do it this way to keep it more bit aligned with the C implementations
+    dy = dx = (0.025 * (nx-1)) / (nx - 1)
 
     u = numpy.zeros((ny, nx))
     v = numpy.zeros((ny, nx))
