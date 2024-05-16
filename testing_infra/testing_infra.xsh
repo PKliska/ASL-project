@@ -18,9 +18,9 @@ def main():
     # based on arguments, run timing plot, consystency, correctness, etc.
     if args.run == "timing":
         if args.long_test:
-            run_timing_test(2, 8, 10000)
+            run_timing_test(100, 1901, 200)
         else:
-            run_timing_test(2, 12, 2000)
+            run_timing_test(100, 301, 100)
     elif args.run == "correctness":
         run_correctness_test()
     elif args.run == "consystency":
@@ -29,9 +29,9 @@ def main():
         run_correctness_test()
         run_consystency_test()
         if args.long_test:
-            run_timing_test(2, 6, 2000)
+            run_timing_test(100, 1901, 200)
         else:
-            run_timing_test(2, 6, 2000)
+            run_timing_test(100, 301, 100)
 
     else:
         raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
@@ -54,7 +54,7 @@ def run_timing_test(start: int, stop: int, step: int):
 
     for implementation in get_all_implementations():
         data = []
-        for matrix_dimension in [2 ** i for i in range(start, stop)]:
+        for matrix_dimension in range(start, stop, step):
             output = $( $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension) )
             n_cycles = float(output.strip().split()[-1])
 
@@ -83,7 +83,8 @@ def run_timing_test(start: int, stop: int, step: int):
 def run_correctness_test():
     print("\n🟠 Starting correctness test...")
 
-    dimensions_which_to_test = [4, 5, 250] + list(range(10, 101, 7)) # test for 4, 5 (for 1..3 it fails cuz of a formatting mismatch...) & some odd ones just in case
+    # test for 4, 5 (for 1..3 it fails cuz of a formatting mismatch...), some regularly spaced ones and big ones just in case
+    dimensions_which_to_test = [4, 5, 289, 800, 950] + list(range(10, 123, 7))
     dimensions_which_to_test = sorted(list(set(dimensions_which_to_test))) # remove duplicates & sort
 
     is_some_result_incorrect = False
@@ -94,6 +95,23 @@ def run_correctness_test():
         except Exception:
             is_some_result_incorrect = True
             pass
+
+    # manual test for nan/inf
+    very_large_matrix_dimension = 1900
+    print(f"matrix_dimension = {very_large_matrix_dimension} ", end="")
+
+    root_dir_for_very_large_matrix = f"{$TESTING_DIR}/correctness/n_{very_large_matrix_dimension}"
+    mkdir --parents @(root_dir_for_very_large_matrix)
+
+    c_output_path = f"{root_dir_for_very_large_matrix}/output_c_{$IMPLEMENTATION}.csv"
+    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(very_large_matrix_dimension)
+
+    command = !( grep -q -Ei "nan|inf" @(c_output_path) )
+    # command = !( grep -q -Ei "nan|inf" ./.test_results/correctness/n_4/output_c_faster_math.csv )
+
+    if does_matrix_contain_nan_or_inf := not has_command_failed(command):
+        print("❌      ❗️ contains NaN or Inf")
+        raise Exception("❗️❗️ Correctness tests failed!")
 
     if is_some_result_incorrect:
         raise Exception("❗️❗️ Correctness tests failed!")
@@ -138,7 +156,7 @@ def check_if_c_output_matches_python_output_for(matrix_dimension):
 
     # run C implementation & save output
     c_output_path = f"{root_dir_for_this_test}/output_c_{$IMPLEMENTATION}.csv"
-    # $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(matrix_dimension)
+    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(matrix_dimension)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )
