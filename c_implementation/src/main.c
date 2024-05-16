@@ -9,7 +9,7 @@
 #include "faster_math_simulation.h"
 #include "tsc_x86.h"
 
-#define NUM_RUNS 30
+#define NUM_RUNS 2
 #define CYCLES_REQUIRED 1e8
 
 struct implementation {
