@@ -89,7 +89,7 @@ def run_correctness_test():
 
     is_some_result_incorrect = False
     for i in dimensions_which_to_test:
-        print(f"matrix_dimension = {i} ", end="")
+        print(f"matrix_dimension = {i} ", end="", flush=True)
         try:
             check_if_c_output_matches_python_output_for(i)
         except Exception:
@@ -98,7 +98,7 @@ def run_correctness_test():
 
     # manual test for nan/inf
     very_large_matrix_dimension = 1900
-    print(f"matrix_dimension = {very_large_matrix_dimension} ", end="")
+    print(f"matrix_dimension (just check for NaN/Inf, don't compare to python impl.) = {very_large_matrix_dimension} ", end="", flush=True)
 
     root_dir_for_very_large_matrix = f"{$TESTING_DIR}/correctness/n_{very_large_matrix_dimension}"
     mkdir --parents @(root_dir_for_very_large_matrix)
@@ -107,11 +107,13 @@ def run_correctness_test():
     $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(very_large_matrix_dimension)
 
     command = !( grep -q -Ei "nan|inf" @(c_output_path) )
-    # command = !( grep -q -Ei "nan|inf" ./.test_results/correctness/n_4/output_c_faster_math.csv )
 
     if does_matrix_contain_nan_or_inf := not has_command_failed(command):
         print("❌      ❗️ contains NaN or Inf")
         raise Exception("❗️❗️ Correctness tests failed!")
+    else:
+        print("✅")
+
 
     if is_some_result_incorrect:
         raise Exception("❗️❗️ Correctness tests failed!")
@@ -122,7 +124,7 @@ def run_consystency_test():
     print(f"\n🟠 Starting consystency test for '{$IMPLEMENTATION}'...")
 
     for i in range(10, 101, 10):
-        print(f"matrix_dimension = {i} ", end="")
+        print(f"matrix_dimension = {i} ", end="", flush=True)
         check_if_c_outputs_consistent_for(i)
 
     print(f"\n✅ Finished consystency test!\n")
