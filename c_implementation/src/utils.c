@@ -17,11 +17,12 @@ double* copy_array(double* a, size_t len){
 void write_matrix(double* m, size_t nx, size_t ny, FILE* fp){
     for(size_t i=0;i<nx;i++){
         for(size_t j=0; j < (ny-1); j++){
-	    // print (ny-1) times with comma at the end
-            fprintf(fp, "%lf,", m[i*ny+j]);
+            // print (ny-1) times with comma at the end
+            // if ya wann know why ".17g" check out: https://stackoverflow.com/a/21162120/5338761
+            fprintf(fp, "%.17g,", m[i*ny+j]);
         }
 	// print last element withouth comma at the end (cuz there are
 	// no elems after it)
-	fprintf(fp, "%lf\n", m[i*ny + ny-1]);
+	fprintf(fp, "%.17g\n", m[i*ny + ny-1]);
     }
 }

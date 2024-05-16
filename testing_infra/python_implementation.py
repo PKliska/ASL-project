@@ -125,7 +125,8 @@ if __name__ == '__main__':
 
         def write_matrix(m):
             for row in m:
-                writer.writerow([f'{elem:.06f}' for elem in row])
+                # if ya wann know why ".17g" check out: https://stackoverflow.com/a/21162120/5338761
+                writer.writerow([f'{elem:.17g}' for elem in row])
 
         # Write U matrix
         # writer.writerows(u)
