@@ -7,6 +7,7 @@
 #include "baseline_simulation.h"
 #include "preallocated_simulation.h"
 #include "faster_math_simulation.h"
+#include "fasterfaster_math_simulation.h"
 #include "trapeze_simulation.h"
 #include "data_trans_simulation.h"
 #include "precomputed_trapeze_simulation.h"
@@ -40,6 +41,9 @@ static const struct implementation IMPLEMENTATIONS[] = {
     },
     {.name = "precomputed_trapeze",
     .create = (struct simulation *(*)(size_t, double, double, double))new_precomputed_trapeze_simulation
+    },
+    {.name = "fasterfaster_math",
+    .create = (struct simulation *(*)(size_t, double, double, double))new_fasterfaster_math_simulation
     }
 };
 
