@@ -1,16 +1,17 @@
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
+#include <immintrin.h>
 
 double* zero_array(size_t len){
     size_t num_bytes = len*sizeof(double);
-    double *a = malloc(num_bytes);
+    double *a = (double*)(aligned_alloc(32, num_bytes));
     memset(a, 0, num_bytes);
     return a;
 }
 double* copy_array(double* a, size_t len){
     size_t num_bytes = len*sizeof(double);
-    double *b = malloc(num_bytes);
+    double *b = _mm_malloc(num_bytes, 32);
     memcpy(b, a, num_bytes);
     return b;
 }
