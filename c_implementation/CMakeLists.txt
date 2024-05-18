@@ -8,6 +8,7 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 		           src/simulation.c
 			   src/preallocated_simulation.c
 			   src/faster_math_simulation.c
+			   src/fasterfaster_math_simulation.c
 			   src/data_trans_simulation.c
 			   src/trapeze_simulation.c
 			   src/precomputed_trapeze_simulation.c
