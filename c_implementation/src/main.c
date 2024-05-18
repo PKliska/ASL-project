@@ -8,6 +8,7 @@
 #include "preallocated_simulation.h"
 #include "faster_math_simulation.h"
 #include "trapeze_simulation.h"
+#include "precomputed_trapeze_simulation.h"
 #include "tsc_x86.h"
 
 #define NUM_RUNS 2
@@ -32,6 +33,9 @@ static const struct implementation IMPLEMENTATIONS[] = {
     },
     {.name = "trapeze",
     .create = (struct simulation *(*)(size_t, double, double, double))new_trapeze_simulation
+    },
+    {.name = "precomputed_trapeze",
+    .create = (struct simulation *(*)(size_t, double, double, double))new_precomputed_trapeze_simulation\
     }
 };
 
