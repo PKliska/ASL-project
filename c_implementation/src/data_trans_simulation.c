@@ -1,3 +1,5 @@
+// from https://link.springer.com/chapter/10.1007/978-3-642-19861-8_13
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "preallocated_simulation.h"
@@ -69,13 +71,31 @@ double* transform_arr(double* arr, int d) {
     return res;
 }
 
+double* invert_transform_arr(double* arr, int d) {
+    int chunkSize = d / 4;
+    double* res = _mm_malloc(sizeof(double) * (d), 32);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < chunkSize; j++) {
+            //if (j == 0 && i == 0) {
+            //    continue;
+            //}
+            //if (j == chunkSize - 1 && i == 3) {
+            //    continue;
+            //}
+
+            res[i * chunkSize + j] = arr[j * 4 + i];
+        }
+    }
+    return res;
+}
+
 static void pressure_poisson(data_trans_simulation* sim,
                  unsigned int pit){
     double *restrict b = sim->b;
     const size_t d = sim->d;
     const double sqds = sq(sim->size / (d - 1));
 
-    __m256d pn_vec_above, pn_vec_below, b_vec, pn_trans_vec_left, pn_trans_vec_right, p_vec_l, p_vec_r, p_vec;
+    __m256d pn_vec_above, pn_vec_below, b_vec, pn_trans_vec_left, pn_trans_vec_right, p_vec_l, p_vec_r, p_vec, res_l;
     __m256d constant_quarter = _mm256_set1_pd(0.25);
     __m256d constant_msqds = _mm256_set1_pd(-sqds);
 
@@ -99,22 +119,36 @@ static void pressure_poisson(data_trans_simulation* sim,
             p[i*d+j] = (pn_right + pn_left + pn_below + pn_above 
                         - b[i*d + j]*sqds) * 0.25;
             }
-            //double* aligned_pni = _mm_malloc(sizeof(double) * d, 32);
-            //memcpy(aligned_pni, pn[d*i], d * sizeof(double));
-            double* pn_trans = transform_arr(&pn[d*i], d);
-            for(size_t j=4;j<d-7;j+=4){
-                //const double pn_left =  pn[d*i     + j-1];
-                //const double pn_right = pn[d*i     + j+1];
-                //const double pn_below = pn[d*(i+1) + j  ];
-                //const double pn_above = pn[d*(i-1) + j  ];
-                //p[i*d+j] = ( ( pn_right + pn_left) 
-                //              + (pn_below + pn_above - b[i*d + j]*sqds ) ) * 0.25;
-                
 
+            double* pn_trans = transform_arr(&pn[d*i], d);
+            double* res = _mm_malloc(sizeof(double) * d, 32);
+
+            pn_trans_vec_left = _mm256_load_pd(pn_trans + 4);
+            pn_trans_vec_right = _mm256_load_pd(pn_trans + d - 4);
+            pn_trans_vec_right = _mm256_permute4x64_pd(pn_trans_vec_right, 0b00111001); //0b00111001
+            res_l = _mm256_add_pd(pn_trans_vec_left, pn_trans_vec_right);
+            _mm256_store_pd(&res[0], res_l);
+
+            for(size_t j=4;j<d-7;j+=4){
                 pn_trans_vec_left = _mm256_load_pd(pn_trans + j - 4);
                 pn_trans_vec_right = _mm256_load_pd(pn_trans + j + 4);
-                p_vec_l = _mm256_add_pd(pn_trans_vec_left, pn_trans_vec_right);
-           
+                res_l = _mm256_add_pd(pn_trans_vec_left, pn_trans_vec_right);
+                _mm256_store_pd(&res[j], res_l);
+            }
+
+            pn_trans_vec_left = _mm256_load_pd(pn_trans + d - 8);
+            pn_trans_vec_right = _mm256_load_pd(pn_trans);
+            pn_trans_vec_right = _mm256_permute4x64_pd(pn_trans_vec_right, 0b10010011); // 0b10010011
+            res_l = _mm256_add_pd(pn_trans_vec_left, pn_trans_vec_right);
+            _mm256_store_pd(&res[d-4], res_l);
+
+            double* pn_orig = invert_transform_arr(&res, d);
+
+            for(size_t j=4;j<d-7;j+=4){
+                
+
+                p_vec_l = _mm256_load_pd(pn_orig + j);
+
                 pn_vec_above = _mm256_load_pd(&pn[d*(i+1) +j]);
                 pn_vec_below = _mm256_load_pd(&pn[d*(i-1)+j]);
                 b_vec = _mm256_load_pd(&b[d*i +j]);
@@ -123,24 +157,13 @@ static void pressure_poisson(data_trans_simulation* sim,
                 p_vec_r = _mm256_add_pd(p_vec_r, pn_vec_below);
                 
                 p_vec = _mm256_add_pd(p_vec_l, p_vec_r);
-                p_vec_r = _mm256_mul_pd(p_vec_r, constant_quarter);
+                p_vec = _mm256_mul_pd(p_vec, constant_quarter);
 
-                //uintptr_t address = (uintptr_t)&p[d*i];
-                //assert((address % 32) == 0);
      
 
-                _mm256_store_pd(&p[d*i+j], p_vec_r);
-
-                for (int j1 = 0; j1 < 4; j1++) {
-                const double pn_left =  pn[d*i     + j-1+j1];
-                const double pn_right = pn[d*i     + j+1+j1];
-                //const double pn_below = pn[d*(i+1) + j  ];
-                //const double pn_above = pn[d*(i-1) + j  ];
-                p[i*d+j+j1] += 0.25* ( pn_right + pn_left);
-                }
+                _mm256_store_pd(&p[d*i+j], p_vec);
             }
 
- 
 
             for(size_t j=d-4;j<d-1;j++){
             const double pn_left =  pn[d*i     + j-1];
