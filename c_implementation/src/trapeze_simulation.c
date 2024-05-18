@@ -15,14 +15,20 @@ static const struct simulation_vtable_ TRAPEZE_SIMULATION_VTABLE[] = {{
 
 trapeze_simulation* new_trapeze_simulation(
     size_t dimension, double size, double rho, double nu){
-    trapeze_simulation* sim = new_preallocated_simulation(dimension,
-                                                              size,
-                                                              rho, nu);
-    free(sim->p);free(sim->pn);free(sim->b);
-    //first and last row are just padding
-    sim->p = zero_array((dimension+2)*dimension);
-    sim->pn = zero_array((dimension+2)*dimension);
-    sim->b = zero_array((dimension+2)*dimension);
+    trapeze_simulation* sim = malloc(sizeof(trapeze_simulation));
+    sim->d = dimension;
+    sim->rho = rho;
+    sim->nu = nu;
+    sim->size = size;
+    size_t matrix_size = dimension*dimension;
+    sim->u = zero_array(matrix_size);
+    sim->un = zero_array(matrix_size);
+    sim->v = zero_array(matrix_size);
+    sim->vn = zero_array(matrix_size);
+    //add 2 rows of padding
+    sim->p = zero_array(matrix_size + 2*dimension);
+    sim->pn = zero_array(matrix_size + 2*dimension);
+    sim->b = zero_array(matrix_size + 2*dimension);
     sim->base.vtable_ = TRAPEZE_SIMULATION_VTABLE;
     return sim;
 }
@@ -32,6 +38,7 @@ static double sq(const double x){
 
 static void build_up_b(const trapeze_simulation* sim,
                double dt){
+    //ignore padding row
     double *restrict b = sim->b + sim->d;
     const size_t d = sim->d;
     const double rho = sim->rho;
@@ -195,6 +202,7 @@ static void step_trapeze_simulation(
     sim->vn = tmp2;
     double *restrict u = sim->u;
     double *restrict v = sim->v;
+    //ogmpre [adding row
     double *restrict p = sim->p + d;
     double *restrict un = sim->un;
     double *restrict vn = sim->vn;
@@ -260,6 +268,7 @@ void advance_trapeze_simulation(trapeze_simulation* sim,
 
 void write_trapeze_simulation(trapeze_simulation* sim,
                    FILE* fp){
+    //ignore padding row
     sim->p += sim->d;
     write_preallocated_simulation(sim, fp);
     sim->p -= sim->d;
