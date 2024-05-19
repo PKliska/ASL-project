@@ -125,7 +125,7 @@ static void pressure_poisson_walk(cutoff_trapeze_simulation* sim,
     const unsigned w = x1 - x0, h = y1 - y0;
     const unsigned dw = dx1 - dx0, dh = dy1 - dy0;
     const unsigned volume = dt * w * h + (h*dw + dh*dw) * (dt - 1)*dt/2 + dh*dw*(dt - 1)*dt*(2*dt - 1)/6;
-    if(volume <= 100){ // arbitrary constant
+    if(volume <= (1<<18)){ // arbitrary constant
         if(sim->poisson_len == sim->poisson_cap){
             struct trapeze* tmp = malloc(2*sim->poisson_cap*sizeof(struct trapeze));
             memcpy(tmp, sim->poisson_order, sim->poisson_len*sizeof(struct trapeze));
