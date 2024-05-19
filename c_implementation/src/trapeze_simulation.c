@@ -97,11 +97,6 @@ static inline void  pressure_poisson_base_case(trapeze_simulation* sim,
 
 }
 
-struct trapeze{
-    unsigned t0, t1;
-    unsigned x0, x1, y0, y1;
-    int dx0, dx1, dy0, dy1;
-};
 // Reference
 // Cache Oblivious Stencil Computations by Frigo and Strumpen 2005
 static void pressure_poisson_walk(trapeze_simulation* sim,

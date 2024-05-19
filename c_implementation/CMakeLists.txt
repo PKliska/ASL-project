@@ -13,6 +13,7 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/vanilla_avx_simulation.c
 			   src/trapeze_simulation.c
 			   src/precomputed_trapeze_simulation.c
+			   src/cutoff_trapeze_simulation.c
 			   src/utils.c)
 
 target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma)

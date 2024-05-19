@@ -5,19 +5,19 @@
 #include "utils.h"
 #include "preallocated_simulation.h"
 #include "simulation.h"
-#include "precomputed_trapeze_simulation.h"
+#include "cutoff_trapeze_simulation.h"
 
 
-static const struct simulation_vtable_ PRECOMPUTED_TRAPEZE_SIMULATION_VTABLE[] = {{
-    .advance=(void (*)(struct simulation *, unsigned int, unsigned int, double))advance_precomputed_trapeze_simulation,
-    .write=(void (*)(const struct simulation *, FILE *))write_precomputed_trapeze_simulation,
-    .destroy=(void (*)(struct simulation *))destroy_precomputed_trapeze_simulation
+static const struct simulation_vtable_ cutoff_trapeze_SIMULATION_VTABLE[] = {{
+    .advance=(void (*)(struct simulation *, unsigned int, unsigned int, double))advance_cutoff_trapeze_simulation,
+    .write=(void (*)(const struct simulation *, FILE *))write_cutoff_trapeze_simulation,
+    .destroy=(void (*)(struct simulation *))destroy_cutoff_trapeze_simulation
 }};
 
 
-precomputed_trapeze_simulation* new_precomputed_trapeze_simulation(
+cutoff_trapeze_simulation* new_cutoff_trapeze_simulation(
     size_t dimension, double size, double rho, double nu){
-    precomputed_trapeze_simulation* sim = malloc(sizeof(precomputed_trapeze_simulation));
+    cutoff_trapeze_simulation* sim = malloc(sizeof(cutoff_trapeze_simulation));
     trapeze_simulation* base_sim = &sim->base;
     base_sim->d = dimension;
     base_sim->rho = rho;
@@ -32,10 +32,10 @@ precomputed_trapeze_simulation* new_precomputed_trapeze_simulation(
     base_sim->p = zero_array(matrix_size + 2*dimension);
     base_sim->pn = zero_array(matrix_size + 2*dimension);
     base_sim->b = zero_array(matrix_size + 2*dimension);
-    base_sim->base.vtable_ = PRECOMPUTED_TRAPEZE_SIMULATION_VTABLE;
+    base_sim->base.vtable_ = cutoff_trapeze_SIMULATION_VTABLE;
     sim->poisson_len = 0;
     sim->poisson_cap = 64;
-    sim->poisson_order = malloc(64 * sizeof(trapeze_base_case_args));
+    sim->poisson_order = malloc(64 * sizeof(struct trapeze));
     return sim;
 }
 static double sq(const double x){
@@ -75,54 +75,65 @@ static void build_up_b(const trapeze_simulation* sim,
     }
 }
 
-static inline void  pressure_poisson_base_case(trapeze_simulation* sim,
-                                              unsigned t,
-                                              unsigned x0, unsigned x1,
-                                              unsigned y0, unsigned y1){
+static inline void  pressure_poisson_do_trapeze(trapeze_simulation* sim,
+                                                struct trapeze* trap){
+    const unsigned t0 = trap->t0, t1 = trap->t1;
+    const int dx0 = trap->dx0, dx1 = trap->dx1;
+    const int dy0 = trap->dy0, dy1 = trap->dy1;
+    unsigned x0 = trap->x0, x1 = trap->x1;
+    unsigned y0 = trap->y0, y1 = trap->y1;
+    
     const unsigned d = sim->d;
     double *restrict p_old, *restrict p_new;
     double *restrict b = sim->b;
-    if(t % 2 == 0){
+    if(t0 % 2 == 0){
         p_old = sim->pn;
         p_new = sim->p;
     }else{
         p_new = sim->pn;
         p_old = sim->p;
     }
-    for(unsigned x=x0;x<x1;x++){
-    for(unsigned y=y0;y<y1;y++){
-        p_new[x*d+y] = (p_old[(x+1)*d + y] + p_old[(x-1)*d + y]
-                      + p_old[x*d + (y+1)] + p_old[x*d + (y-1)]
-                      - b[x*d+y]) * 0.25;
+    for(unsigned t=t0;t<t1;t++){
+        for(unsigned x=x0;x<x1;x++){
+        for(unsigned y=y0;y<y1;y++){
+            p_new[x*d+y] = (p_old[(x+1)*d + y] + p_old[(x-1)*d + y]
+                          + p_old[x*d + (y+1)] + p_old[x*d + (y-1)]
+                          - b[x*d+y]) * 0.25;
+        }
+        }
+        if(y1 == d) for(unsigned x=x0;x<x1;x++) p_new[x*d + (d-1)] = p_new[x*d +(d-2)];
+        if(y0 == 0) for(unsigned x=x0;x<x1;x++) p_new[x*d + 0] = p_new[x*d + 1];
+        if(x0 == 1) for(unsigned y=y0;y<y1;y++) p_new[1*d + y] = p_new[2*d + y];
+        if(x1 == d+1) for(unsigned y=y0;y<y1;y++) p_new[d*d + y] = 0;
+        x0 += dx0;x1 += dx1;
+        y0 += dy0;y1 += dy1;
+        double *tmp;
+        tmp = p_new;
+        p_new = p_old;
+        p_old = tmp;
     }
-    }
-    if(y1 == d) for(unsigned x=x0;x<x1;x++) p_new[x*d + (d-1)] = p_new[x*d +(d-2)];
-    if(y0 == 0) for(unsigned x=x0;x<x1;x++) p_new[x*d + 0] = p_new[x*d + 1];
-    if(x0 == 1) for(unsigned y=y0;y<y1;y++) p_new[1*d + y] = p_new[2*d + y];
-    if(x1 == d+1) for(unsigned y=y0;y<y1;y++) p_new[d*d + y] = 0;
-
 }
 
 // Reference
 // Cache Oblivious Stencil Computations by Frigo and Strumpen 2005
-static void pressure_poisson_walk(precomputed_trapeze_simulation* sim,
+static void pressure_poisson_walk(cutoff_trapeze_simulation* sim,
                                   struct trapeze* trap){
     const unsigned t0 = trap->t0, t1 = trap->t1;
     const unsigned x0 = trap->x0, dx0 = trap->dx0, x1 = trap->x1, dx1 = trap->dx1;
     const unsigned y0 = trap->y0, dy0 = trap->dy0, y1 = trap->y1, dy1 = trap->dy1;
     const unsigned dt = t1 - t0;
-    if(dt == 1){
-        trapeze_base_case_args args = {.t = t0,
-                                       .x0 = x0,.x1=x1,
-                                       .y0 = y0,.y1=y1};
+    const unsigned w = x1 - x0, h = y1 - y0;
+    const unsigned dw = dx1 - dx0, dh = dy1 - dy0;
+    const unsigned volume = dt * w * h + (h*dw + dh*dw) * (dt - 1)*dt/2 + dh*dw*(dt - 1)*dt*(2*dt - 1)/6;
+    if(volume <= 100){ // arbitrary constant
         if(sim->poisson_len == sim->poisson_cap){
-            trapeze_base_case_args* tmp = malloc(2*sim->poisson_cap*sizeof(trapeze_base_case_args));
-            memcpy(tmp, sim->poisson_order, sim->poisson_len*sizeof(trapeze_base_case_args));
+            struct trapeze* tmp = malloc(2*sim->poisson_cap*sizeof(struct trapeze));
+            memcpy(tmp, sim->poisson_order, sim->poisson_len*sizeof(struct trapeze));
             free(sim->poisson_order);
             sim->poisson_order = tmp;
             sim->poisson_cap *= 2;
         }
-        sim->poisson_order[sim->poisson_len] = args;
+        sim->poisson_order[sim->poisson_len] = *trap;
         sim->poisson_len++;
         return;
     }
@@ -165,7 +176,7 @@ static void pressure_poisson_walk(precomputed_trapeze_simulation* sim,
     trap->y0 = y0; trap->y1 = y1;
     trap->t0 = t0;
 }
-static void precompute_poisson(precomputed_trapeze_simulation* sim, unsigned pit){
+static void precompute_poisson(cutoff_trapeze_simulation* sim, unsigned pit){
     sim->poisson_len = 0;
     const unsigned d = sim->base.d;
     struct trapeze trap = {
@@ -176,12 +187,10 @@ static void precompute_poisson(precomputed_trapeze_simulation* sim, unsigned pit
     pressure_poisson_walk(sim, &trap);
 }
 
-static void pressure_poisson(precomputed_trapeze_simulation* sim,
+static void pressure_poisson(cutoff_trapeze_simulation* sim,
                  unsigned pit){
     for(size_t i = 0; i<sim->poisson_len;i++){
-        pressure_poisson_base_case(&sim->base, sim->poisson_order[i].t,
-                                   sim->poisson_order[i].x0, sim->poisson_order[i].x1,
-                                   sim->poisson_order[i].y0, sim->poisson_order[i].y1);
+        pressure_poisson_do_trapeze(&sim->base, &sim->poisson_order[i]);
     }
     if(pit % 2 == 1){
         double* tmp;
@@ -196,8 +205,8 @@ static void pressure_poisson(precomputed_trapeze_simulation* sim,
  * for the calculation of pressure. Use the array b for the calculation
  * of the intermediate matrix b.
 */
-static void step_precomputed_trapeze_simulation(
-    precomputed_trapeze_simulation* sim, unsigned int pit, double dt){
+static void step_cutoff_trapeze_simulation(
+    cutoff_trapeze_simulation* sim, unsigned int pit, double dt){
     
     trapeze_simulation* base_sim = &sim->base;
     build_up_b(base_sim, dt);
@@ -278,17 +287,17 @@ static void step_precomputed_trapeze_simulation(
 /* Advance the simulation sim by steps steps of size dt, using pit
  * iterations for the calculation of pressure.
 */
-void advance_precomputed_trapeze_simulation(precomputed_trapeze_simulation* sim,
+void advance_cutoff_trapeze_simulation(cutoff_trapeze_simulation* sim,
                  unsigned int steps,
                  unsigned int pit, double dt){
     precompute_poisson(sim, pit);
     for(unsigned int i=0;i<steps;i++){
-        step_precomputed_trapeze_simulation(sim, pit, dt);
+        step_cutoff_trapeze_simulation(sim, pit, dt);
     }
 } // Flops ?
 
 
-void write_precomputed_trapeze_simulation(precomputed_trapeze_simulation* sim,
+void write_cutoff_trapeze_simulation(cutoff_trapeze_simulation* sim,
                    FILE* fp){
     trapeze_simulation* base_sim = &sim->base;
     //ignore padding row
@@ -297,7 +306,7 @@ void write_precomputed_trapeze_simulation(precomputed_trapeze_simulation* sim,
     base_sim->p -= base_sim->d;
 }
 
-void destroy_precomputed_trapeze_simulation(precomputed_trapeze_simulation* sim){
+void destroy_cutoff_trapeze_simulation(cutoff_trapeze_simulation* sim){
     trapeze_simulation* base_sim = &sim->base;
     free(base_sim->u);
     free(base_sim->un);

@@ -2,6 +2,12 @@
 #define UTILS_H
 #include <stdio.h>
 
+struct trapeze{
+    unsigned t0, t1;
+    unsigned x0, x1, y0, y1;
+    int dx0, dx1, dy0, dy1;
+};
+
 /* Returns a pointer to an array of doubles of size *len* initialized to
  * zeroes. Caller should call free on the array after it is done.
  * */
