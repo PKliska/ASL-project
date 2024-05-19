@@ -10,6 +10,7 @@
 #include "fasterfaster_math_simulation.h"
 #include "trapeze_simulation.h"
 #include "data_trans_simulation.h"
+#include "vanilla_avx_simulation.h"
 #include "precomputed_trapeze_simulation.h"
 #include "tsc_x86.h"
 
@@ -44,6 +45,9 @@ static const struct implementation IMPLEMENTATIONS[] = {
     },
     {.name = "fasterfaster_math",
     .create = (struct simulation *(*)(size_t, double, double, double))new_fasterfaster_math_simulation
+    },
+    {.name = "vanilla_avx",
+    .create = (struct simulation *(*)(size_t, double, double, double))new_vanilla_avx_simulation
     }
 };
 
