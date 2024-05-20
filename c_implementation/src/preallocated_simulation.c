@@ -227,6 +227,10 @@ void write_preallocated_simulation(struct preallocated_simulation* sim,
 }
 
 void destroy_preallocated_simulation(struct preallocated_simulation* sim){
+    deinit_preallocated_simulation(sim);
+    free(sim);
+}
+void deinit_preallocated_simulation(struct preallocated_simulation* sim){
     free(sim->u);
     free(sim->un);
     free(sim->v);
@@ -234,5 +238,4 @@ void destroy_preallocated_simulation(struct preallocated_simulation* sim){
     free(sim->p);
     free(sim->pn);
     free(sim->b);
-    free(sim);
 }

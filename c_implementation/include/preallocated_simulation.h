@@ -31,4 +31,5 @@ void write_preallocated_simulation(struct preallocated_simulation* sim,
                                FILE* fp);
 
 void destroy_preallocated_simulation(struct preallocated_simulation* sim);
+void deinit_preallocated_simulation(struct preallocated_simulation* sim);
 #endif

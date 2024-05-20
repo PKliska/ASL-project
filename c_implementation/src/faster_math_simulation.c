@@ -13,12 +13,18 @@ static const struct simulation_vtable_ FASTER_MATH_SIMULATION_VTABLE[] = {{
 
 faster_math_simulation* new_faster_math_simulation(
     size_t dimension, double size, double rho, double nu){
-    faster_math_simulation* sim = new_preallocated_simulation(dimension,
-                                                              size,
-                                                              rho, nu);
-    sim->base.vtable_ = FASTER_MATH_SIMULATION_VTABLE;
+    faster_math_simulation* sim = malloc(sizeof(*sim)); 
+    init_faster_math_simulation(sim, dimension, size, rho, nu);
     return sim;
 }
+
+void init_faster_math_simulation(faster_math_simulation* sim,
+    size_t dimension, double size, double rho, double nu){
+    init_preallocated_simulation(sim, dimension, size, rho, nu);
+    sim->base.vtable_ = FASTER_MATH_SIMULATION_VTABLE;
+}
+
+
 static double sq(const double x){
     return x*x;
 }
@@ -186,5 +192,10 @@ void write_faster_math_simulation(faster_math_simulation* sim,
 }
 
 void destroy_faster_math_simulation(faster_math_simulation* sim){
-    destroy_preallocated_simulation(sim);
+    deinit_faster_math_simulation(sim);
+    free(sim);
+}
+
+void deinit_faster_math_simulation(faster_math_simulation *sim){
+    deinit_preallocated_simulation(sim);
 }
