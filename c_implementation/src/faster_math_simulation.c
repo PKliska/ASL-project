@@ -23,7 +23,7 @@ static double sq(const double x){
     return x*x;
 }
 
-static void build_up_b(const faster_math_simulation* sim,
+void faster_math_build_up_b(const faster_math_simulation* sim,
                double dt){
     double *restrict b = sim->b;
     const size_t d = sim->d;
@@ -94,7 +94,7 @@ static void pressure_poisson(faster_math_simulation* sim,
 static void step_faster_math_simulation(
     faster_math_simulation* sim, unsigned int pit, double dt){
     
-    build_up_b(sim, dt);
+    faster_math_build_up_b(sim, dt);
     pressure_poisson(sim, pit);
     const size_t d = sim->d;
     const double ds = sim->size / (d - 1);
