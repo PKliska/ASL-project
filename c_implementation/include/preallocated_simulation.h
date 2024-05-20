@@ -19,6 +19,10 @@ struct preallocated_simulation{
 struct preallocated_simulation* new_preallocated_simulation(
     size_t dimension, double size, double rho, double nu);
 
+void init_preallocated_simulation(struct preallocated_simulation* sim,
+                                  size_t dimension, double size,
+                                  double rho, double nu);
+
 void advance_preallocated_simulation(struct preallocated_simulation* sim,
                                  unsigned int steps, unsigned int pit,
                                  double dt);

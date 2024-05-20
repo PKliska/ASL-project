@@ -17,6 +17,13 @@ struct preallocated_simulation* new_preallocated_simulation(
     struct preallocated_simulation *sim = malloc(
     sizeof(struct preallocated_simulation)
     );
+    init_preallocated_simulation(sim, dimension, size, rho, nu);
+    return sim;
+}
+
+void init_preallocated_simulation(struct preallocated_simulation *sim,
+                                  size_t dimension, double size,
+                                  double rho, double nu){
     sim->base.vtable_ = PREALLOCATED_SIMULATION_VTABLE_;
     sim->d = dimension;
     sim->rho = rho;
@@ -30,8 +37,8 @@ struct preallocated_simulation* new_preallocated_simulation(
     sim->p = zero_array(matrix_size);
     sim->pn = zero_array(matrix_size);
     sim->b = zero_array(matrix_size);
-    return sim;
 }
+
 static double sq(const double x){
     return x*x;
 }
