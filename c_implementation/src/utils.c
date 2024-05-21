@@ -2,9 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <immintrin.h>
+#include <assert.h>
 
 double* zero_array(size_t len){
     size_t num_bytes = len*sizeof(double);
+    double *a = (double*)(aligned_alloc(32, num_bytes));
+    memset(a, 0, num_bytes);
+    return a;
+}
+double* aligned_zero_array(size_t len){
+    size_t num_bytes = len*sizeof(double);
+    assert(num_bytes % 32 == 0);
     double *a = (double*)(aligned_alloc(32, num_bytes));
     memset(a, 0, num_bytes);
     return a;

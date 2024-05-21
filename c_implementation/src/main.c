@@ -13,6 +13,7 @@
 #include "vanilla_avx_simulation.h"
 #include "precomputed_trapeze_simulation.h"
 #include "cutoff_trapeze_simulation.h"
+#include "aligned_avx_simulation.h"
 #include "tsc_x86.h"
 
 #define NUM_RUNS 2
@@ -52,6 +53,9 @@ static const struct implementation IMPLEMENTATIONS[] = {
     },
     {.name = "cutoff_trapeze",
     .create = (struct simulation *(*)(size_t, double, double, double))new_cutoff_trapeze_simulation
+    },
+    {.name = "aligned_AVX",
+    .create = (struct simulation *(*)(size_t, double, double, double))new_aligned_AVX_simulation
     }
 };
 
