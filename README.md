@@ -25,18 +25,23 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 
 # actually run the testing infrastructure
-./run-script.sh ./testing_infra.xsh # runs all tests (correctness, consystency & timing) for baseline
+./run-script.sh ./testing_infra.xsh # runs all tests (correctness, consystency & timing)
 
-# choose which implementation to test, if not implementation passed "baseline" is used
-./run-script.sh ./testing_infra.xsh --implementation preallocated
+# run the testing infrastructure for a specific implementation, runs all tests (correctness, consystency & timing)
+./run-script.sh ./testing_infra.xsh --implementation baseline
 
-# runs just the (short) timing test to generate the plot, quick but only times the algo for 3 "sizes"
-./run-script.sh ./testing_infra.xsh --run timing --short
+# run all tests for multiple implementations (e.g. for baseline & prealloc)
+./run-script.sh ./testing_infra.xsh --implementation baseline preallocated
+
+# runs just the (short) timing test to generate the plot, quick but only times the algo for a few smaller sizes
+./run-script.sh ./testing_infra.xsh --run timing --short-test --implementation baseline
 
 # runs the long timing test which takes way longer to complete, but tests more sizes (like >10)
-./run-script.sh ./testing_infra.xsh --run timing --long
+./run-script.sh ./testing_infra.xsh --run timing --long-test
 
-# runs correctness test
-./run-script.sh ./testing_infra.xsh --run correctness
+# runs the long timing test for multiple implementations
+./run-script.sh ./testing_infra.xsh --run timing --long-test --implementation baseline preallocated
+
+
 ```
 

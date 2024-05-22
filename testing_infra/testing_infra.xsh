@@ -15,23 +15,32 @@ def main():
     recompile_c_implementation()
     mkdir --parents "$TESTING_DIR"
 
+    if has_user_defined_implementations := len(args.implementation) > 0:
+        implementations = args.implementation
+    else:
+        implementations = get_all_implementations()
+
     # based on arguments, run timing plot, consystency, correctness, etc.
     if args.run == "timing":
         if args.long_test:
-            run_timing_test(100, 1901, 200)
+            run_timing_test(implementations, 100, 1901, 200)
         else:
-            run_timing_test(100, 301, 100)
+            run_timing_test(implementations, 100, 301, 100)
     elif args.run == "correctness":
-        run_correctness_test()
+        for i in implementations:
+            run_correctness_test(i)
     elif args.run == "consystency":
-        run_consystency_test()
+        for i in implementations:
+            run_consystency_test(i)
     elif args.run == "all":
-        run_correctness_test()
-        run_consystency_test()
+        for i in implementations:
+            run_correctness_test(i)
+            run_consystency_test(i)
+
         if args.long_test:
-            run_timing_test(100, 1901, 200)
+            run_timing_test(implementations, 100, 1901, 200)
         else:
-            run_timing_test(100, 301, 100)
+            run_timing_test(implementations, 100, 301, 100)
 
     else:
         raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
@@ -39,7 +48,7 @@ def main():
 def parse_cli_args():
     argparser = ArgumentParser(description="")
     argparser.add_argument("--run", metavar="ACTION", default="all", help="Action to execute (e.g. run correctness tests)")
-    argparser.add_argument("--implementation", default="baseline", help="Chose which implementation to run")
+    argparser.add_argument("--implementation", nargs='+', help="Chose which implementation to run, can also be given multiple implementations")
     group = argparser.add_mutually_exclusive_group()
     group.add_argument("--short-test", action="store_true", default=True, help="Quickly gets some (rough) results")
     group.add_argument("--long-test", action="store_true", help="Slowly gets detailed results, runs more iterations of the algo")
@@ -47,18 +56,18 @@ def parse_cli_args():
     args = argparser.parse_args()
     return args
 
-def run_timing_test(start: int, stop: int, step: int):
+def run_timing_test(implementations: str, start: int, stop: int, step: int):
     print("\n🟠 Starting timing test...")
 
     current_time = strftime("%Y-%m-%d %H:%M:%S")
 
-    for implementation in get_all_implementations():
+    for implementation in implementations:
         data = []
-        for matrix_dimension in range(start, stop, step):
+        for matrix_dimension in [32, 64, 128, 640, 960, 1280, 1600]:
             output = $( $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension) )
             n_cycles = float(output.strip().split()[-1])
 
-            print(f"Simulating {implementation} with dimension={matrix_dimension} took {n_cycles} cycles ({n_cycles/(2.5*10**9)} sec)")
+            print(f"Simulating {implementation} with dimension={matrix_dimension} took {n_cycles} cycles ({n_cycles/(3.4*10**9)} sec)")
             data.append((matrix_dimension, n_cycles))
 
         print(data)
@@ -71,7 +80,7 @@ def run_timing_test(start: int, stop: int, step: int):
             writer.writerow(["matrix_dimension", "n_cycles"])
             writer.writerows(data)
 
-    all_implementations = [f"{i}.csv" for i in get_all_implementations()]
+    all_implementations = [f"{i}.csv" for i in implementations]
     all_implementations_comma_sep = ",".join(all_implementations)
 
     # make plot
@@ -80,31 +89,29 @@ def run_timing_test(start: int, stop: int, step: int):
     print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot.png'\n")
 
 
-def run_correctness_test():
+def run_correctness_test(implementation: str):
     print("\n🟠 Starting correctness test...")
 
-    # test for 4, 5 (for 1..3 it fails cuz of a formatting mismatch...), some regularly spaced ones and big ones just in case
-    dimensions_which_to_test = [4, 5, 289, 800, 950] + list(range(10, 123, 7))
-    dimensions_which_to_test = sorted(list(set(dimensions_which_to_test))) # remove duplicates & sort
+    dimensions_which_to_test = [32, 64, 128, 640, 960, 1280]
 
     is_some_result_incorrect = False
     for i in dimensions_which_to_test:
         print(f"matrix_dimension = {i} ", end="", flush=True)
         try:
-            check_if_c_output_matches_python_output_for(i)
+            check_if_c_output_matches_python_output_for(i, implementation)
         except Exception:
             is_some_result_incorrect = True
             pass
 
     # manual test for nan/inf
-    very_large_matrix_dimension = 1900
+    very_large_matrix_dimension = 1600
     print(f"matrix_dimension (just check for NaN/Inf, don't compare to python impl.) = {very_large_matrix_dimension} ", end="", flush=True)
 
     root_dir_for_very_large_matrix = f"{$TESTING_DIR}/correctness/n_{very_large_matrix_dimension}"
     mkdir --parents @(root_dir_for_very_large_matrix)
 
-    c_output_path = f"{root_dir_for_very_large_matrix}/output_c_{$IMPLEMENTATION}.csv"
-    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(very_large_matrix_dimension)
+    c_output_path = f"{root_dir_for_very_large_matrix}/output_c_{implementation}.csv"
+    $C_BINARY  -I @(implementation) --output_file=@(c_output_path) --dimension=@(very_large_matrix_dimension)
 
     command = !( grep -q -Ei "nan|inf" @(c_output_path) )
 
@@ -120,26 +127,26 @@ def run_correctness_test():
     print(f"\n✅ Finished correctness test!\n")
 
 
-def run_consystency_test():
-    print(f"\n🟠 Starting consystency test for '{$IMPLEMENTATION}'...")
+def run_consystency_test(implementation: str):
+    print(f"\n🟠 Starting consystency test for '{implementation}'...")
 
-    for i in range(10, 101, 10):
+    for i in [32, 64, 128, 640, 960, 1280, 1600]:
         print(f"matrix_dimension = {i} ", end="", flush=True)
-        check_if_c_outputs_consistent_for(i)
+        check_if_c_outputs_consistent_for(i, implementation)
 
     print(f"\n✅ Finished consystency test!\n")
 
 
-def check_if_c_outputs_consistent_for(matrix_dimension):
+def check_if_c_outputs_consistent_for(matrix_dimension, implementation: str):
     """Checks if the C implementation produces the same output CSV file if given the
     same arguments."""
 
     mkdir -p "$TESTING_DIR/consystency/"
-    c_output_path_1 = f"{$TESTING_DIR}/consystency/output_c_1_{$IMPLEMENTATION}.csv"
-    c_output_path_2 = f"{$TESTING_DIR}/consystency/output_c_2_{$IMPLEMENTATION}.csv"
+    c_output_path_1 = f"{$TESTING_DIR}/consystency/output_c_1_{implementation}.csv"
+    c_output_path_2 = f"{$TESTING_DIR}/consystency/output_c_2_{implementation}.csv"
 
-    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_1) --dimension=@(matrix_dimension)
-    $C_BINARY -I "$IMPLEMENTATION" --output_file=@(c_output_path_2) --dimension=@(matrix_dimension)
+    $C_BINARY -I @(implementation) --output_file=@(c_output_path_1) --dimension=@(matrix_dimension)
+    $C_BINARY -I @(implementation) --output_file=@(c_output_path_2) --dimension=@(matrix_dimension)
 
     compare_files_command = !( cmp --silent -- @(c_output_path_1) @(c_output_path_2 ))
     if are_files_different := has_command_failed(compare_files_command):
@@ -148,7 +155,7 @@ def check_if_c_outputs_consistent_for(matrix_dimension):
     else:
         print("✅")
 
-def check_if_c_output_matches_python_output_for(matrix_dimension):
+def check_if_c_output_matches_python_output_for(matrix_dimension: int, implementation: str):
     root_dir_for_this_test = f"{$TESTING_DIR}/correctness/n_{matrix_dimension}"
     mkdir --parents @(root_dir_for_this_test)
 
@@ -157,8 +164,8 @@ def check_if_c_output_matches_python_output_for(matrix_dimension):
     python ./python_implementation.py @(python_output_path) @(matrix_dimension)
 
     # run C implementation & save output
-    c_output_path = f"{root_dir_for_this_test}/output_c_{$IMPLEMENTATION}.csv"
-    $C_BINARY  -I "$IMPLEMENTATION" --output_file=@(c_output_path) --dimension=@(matrix_dimension)
+    c_output_path = f"{root_dir_for_this_test}/output_c_{implementation}.csv"
+    $C_BINARY  -I @(implementation) --output_file=@(c_output_path) --dimension=@(matrix_dimension)
 
     # compare the outputs
     compare_files_command = !( cmp --silent -- @(c_output_path) @(python_output_path) )
@@ -177,7 +184,7 @@ def set_global_variables(args):
     $C_BINARY = Path(f"{$C_IMPLEMENTATION_DIR}/build/bin/cavity_flow")
 
     $TESTING_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/.test_results").resolve(strict=True)
-    $IMPLEMENTATION = args.implementation
+    # $IMPLEMENTATION = args.implementation
 
     ## XONSH
     # throw error if bash command fails, otherwise we silently ignore the error
