@@ -32,5 +32,6 @@ kill_task() {
 
 trap kill_task SIGINT
 
+printf "❗️ Waiting for your task to start executing...\n"
 pueue follow "$task_id"
 
