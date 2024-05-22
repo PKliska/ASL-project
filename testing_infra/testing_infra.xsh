@@ -20,50 +20,46 @@ def main():
     else:
         implementations = get_all_implementations()
 
-    # based on arguments, run timing plot, consystency, correctness, etc.
+    if has_user_defined_test_cases := len(args.matrix_dimensions) > 0:
+        test_cases = [int(t) for t in args.matrix_dimensions]
+    else:
+        test_cases = [32, 64, 128, 640, 960, 1280]
+
+    # based on arguments run timing plot, consystency, correctness, etc.
     if args.run == "timing":
-        if args.long_test:
-            run_timing_test(implementations, 100, 1901, 200)
-        else:
-            run_timing_test(implementations, 100, 301, 100)
+        run_timing_test(implementations, test_cases)
     elif args.run == "correctness":
         for i in implementations:
-            run_correctness_test(i)
+            run_correctness_test(i, test_cases)
     elif args.run == "consystency":
         for i in implementations:
-            run_consystency_test(i)
+            run_consystency_test(i, test_cases)
     elif args.run == "all":
         for i in implementations:
-            run_correctness_test(i)
-            run_consystency_test(i)
+            run_correctness_test(i, test_cases)
+            run_consystency_test(i, test_cases)
 
-        if args.long_test:
-            run_timing_test(implementations, 100, 1901, 200)
-        else:
-            run_timing_test(implementations, 100, 301, 100)
-
+        run_timing_test(implementations, test_cases)
     else:
         raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
 
 def parse_cli_args():
     argparser = ArgumentParser(description="")
     argparser.add_argument("--run", metavar="ACTION", default="all", help="Action to execute (e.g. run correctness tests)")
-    argparser.add_argument("--implementation", nargs='+', help="Chose which implementation to run, can also be given multiple implementations")
-    group = argparser.add_mutually_exclusive_group()
-    group.add_argument("--short-test", action="store_true", default=True, help="Quickly gets some (rough) results")
-    group.add_argument("--long-test", action="store_true", help="Slowly gets detailed results, runs more iterations of the algo")
+    argparser.add_argument("--implementation", nargs='+', default=[], help="Chose which implementation to run, can also be given multiple implementations")
+    argparser.add_argument("--matrix-dimensions", nargs='+', default=[], help="For which matrix dimensions to run the tests")
 
     args = argparser.parse_args()
     return args
 
-def run_timing_test(implementations: str, start: int, stop: int, step: int):
+def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
     print("\n🟠 Starting timing test...")
 
     current_time = strftime("%Y-%m-%d %H:%M:%S")
 
     for implementation in implementations:
         data = []
-        for matrix_dimension in [32, 64, 128, 640, 960, 1280, 1600]:
+        for matrix_dimension in dimensions_which_to_test:
             output = $( $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension) )
             n_cycles = float(output.strip().split()[-1])
 
@@ -89,10 +85,8 @@ def run_timing_test(implementations: str, start: int, stop: int, step: int):
     print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot.png'\n")
 
 
-def run_correctness_test(implementation: str):
-    print("\n🟠 Starting correctness test...")
-
-    dimensions_which_to_test = [32, 64, 128, 640, 960, 1280]
+def run_correctness_test(implementation: str, dimensions_which_to_test: list[int]):
+    print(f"\n🟠 Correctness test for '{implementation}'...")
 
     is_some_result_incorrect = False
     for i in dimensions_which_to_test:
@@ -127,10 +121,10 @@ def run_correctness_test(implementation: str):
     print(f"\n✅ Finished correctness test!\n")
 
 
-def run_consystency_test(implementation: str):
+def run_consystency_test(implementation: str, dimensions_which_to_test: list[int]):
     print(f"\n🟠 Starting consystency test for '{implementation}'...")
 
-    for i in [32, 64, 128, 640, 960, 1280, 1600]:
+    for i in dimensions_which_to_test:
         print(f"matrix_dimension = {i} ", end="", flush=True)
         check_if_c_outputs_consistent_for(i, implementation)
 

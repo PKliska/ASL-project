@@ -33,14 +33,17 @@ python3 -m pip install -r requirements.txt
 # run all tests for multiple implementations (e.g. for baseline & prealloc)
 ./run-script.sh ./testing_infra.xsh --implementation baseline preallocated
 
-# runs just the (short) timing test to generate the plot, quick but only times the algo for a few smaller sizes
-./run-script.sh ./testing_infra.xsh --run timing --short-test --implementation baseline
+# run all tests for multiple implementations (e.g. for baseline & prealloc) for matrices of dimensions [10, 20, 30]
+./run-script.sh ./testing_infra.xsh --implementation baseline preallocated --matrix-dimensions 10 20 30
 
-# runs the long timing test which takes way longer to complete, but tests more sizes (like >10)
-./run-script.sh ./testing_infra.xsh --run timing --long-test
+# runs just the timing test to generate the plot
+./run-script.sh ./testing_infra.xsh --run timing --implementation baseline
 
-# runs the long timing test for multiple implementations
-./run-script.sh ./testing_infra.xsh --run timing --long-test --implementation baseline preallocated
+# runs the timing test for multiple implementations
+./run-script.sh ./testing_infra.xsh --run timing --implementation baseline preallocated
+
+# runs the timing test for multiple implementations and for specific matrix dimensions
+./run-script.sh ./testing_infra.xsh --run timing --implementation baseline preallocated --matrix-dimensions 32 64 96
 
 
 ```
