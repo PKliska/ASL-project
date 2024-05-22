@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 FREQUENCY = 3.4e9 # 3.4 GHz
 
 def plot_csv_files(csv_files, labels):
-    sns.set_theme(style="dark")
+    # sns.set_theme(style="dark")
 
     palette = sns.color_palette("rocket", len(csv_files))
 
@@ -19,7 +19,8 @@ def plot_csv_files(csv_files, labels):
         df = pd.read_csv(csv_file)
         #performance = 1811515 * df['matrix_dimension'] / df['n_cycles']
         df['n_cycles'] = df['n_cycles'] / FREQUENCY
-        sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label, color=color)
+        sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label)
+        # sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label, color=color)
 
     plt.xlabel("Dimension")
     plt.ylabel("Runtime")
@@ -33,7 +34,8 @@ def plot_csv_files(csv_files, labels):
     for x in df["matrix_dimension"]:
         plt.axvline(x=x, color='w', linestyle='-', linewidth=1)
 
-    plt.savefig("plot")
+    # plt.figure(figsize=(10, 6))
+    plt.savefig("plot", dpi=300)
     plt.show()
 
 csv_files = (sys.argv[1]).split(",")  # List of CSV files, comma separeted
