@@ -13,4 +13,24 @@ if [ -z "$1" ]; then # first arg is not set
     exit 1
 fi
 
-xonsh "$1" "${@:2}" # 1st arg is the program to be run and pass the other args into the program
+pueue clean
+
+printf "❗️ Already running tasks:\n"
+pueue status status=running
+
+printf "\n✅ Adding task to run queue\n"
+task_id=$(pueue add --print-task-id "xonsh $1 ${@:2}") # 1st arg is the program to be run and pass the other args into the program
+
+printf "❗️ Queue now (first 5 tasks):\n"
+pueue status first 5
+printf "\n"
+
+kill_task() {
+    pueue kill "$task_id" || pueue remove "$task_id"
+    sleep 1
+}
+
+trap kill_task SIGINT
+
+pueue follow "$task_id"
+

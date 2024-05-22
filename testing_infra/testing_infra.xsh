@@ -10,7 +10,7 @@ def main():
     args = parse_cli_args()
     set_global_variables(args)
 
-    disable_turbo_boost()
+    # disable_turbo_boost()
 
     if should_only_rerun_plotter := args.run == "remake_plot":
         # re-runs the plotting code with the data of the last timing test
