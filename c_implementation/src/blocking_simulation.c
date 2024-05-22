@@ -76,15 +76,14 @@ void advance_blocking_simulation(
 
             int block_size = 8;
 
-            for (size_t i = 1; i < d - 1; i++)
+            for (size_t i = 1; i < d - 1; i += block_size)
             {
                 for (size_t j = 1; j < d - 1; j += block_size)
                 {
-                    for (size_t k = 1; k < block_size + 1; k++)
+                    for (size_t k = 0; k < block_size; k++)
                     {
-                        for (size_t l = 1; l < block_size + 1; l++)
+                        for (size_t l = 0; l < block_size; l++)
                         {
-                            printf("The index %d", d * (i + k) + (j + l) - 1);
                             const double pn_left = pn[d * (i + k) + (j + l) - 1];
                             const double pn_right = pn[d * (i + k) + (j + l) + 1];
                             const double pn_below = pn[d * (i + k + 1) + (j + l)];
