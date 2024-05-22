@@ -5,7 +5,7 @@
 
 set -e  # abort script at first error, when a command exits with non-zero status
 
-printf "Activating python virtual env... (venv needs to be in root dir of project)"
+printf "Activating python virtual env... (venv needs to be in root dir of project)\n"
 source ../.venv/bin/activate
 
 if [ -z "$1" ]; then # first arg is not set
