@@ -37,9 +37,11 @@ static const struct implementation IMPLEMENTATIONS[] = {
     {.name = "faster_math",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_faster_math_simulation},
     {.name = "trapeze",
-     .create = (struct simulation * (*)(size_t, double, double, double)) new_trapeze_simulation},
-    {.name = "data_trans",
-     .create = (struct simulation * (*)(size_t, double, double, double)) new_data_trans_simulation},
+    .create = (struct simulation *(*)(size_t, double, double, double))new_trapeze_simulation
+    },
+    // {.name = "data_trans",
+    // .create = (struct simulation *(*)(size_t, double, double, double))new_data_trans_simulation
+    // },
     {.name = "precomputed_trapeze",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_precomputed_trapeze_simulation},
     {.name = "fasterfaster_math",
