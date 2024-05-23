@@ -3,7 +3,7 @@ project(cavity_flow C)
 
 add_subdirectory(external/cargs)
 
-
+# Create the main executable target
 add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/simulation.c
 			   src/preallocated_simulation.c
@@ -18,7 +18,20 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/blocking_simulation.c
 			   src/utils.c)
 
-target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma)
+# Define a cache variable for the custom flag and define value
+set(BLOCK_SIZE "" CACHE STRING "Custom define value")
+
+# Set compilation options and include directories for the main target
+if (BLOCK_SIZE)
+	message(STATUS "❗️ Using BLOCK SIZE: ${BLOCK_SIZE}")
+	add_compile_definitions(BLOCK_SIZE=${BLOCK_SIZE})
+	target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma)
+else()
+	message(STATUS "❗️ Using BLOCK SIZE: 8")
+	add_compile_definitions(BLOCK_SIZE=8)
+	target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma)
+endif()
+
 target_include_directories(cavity_flow PUBLIC include)
 target_link_libraries(cavity_flow cargs)
 set_target_properties(cavity_flow

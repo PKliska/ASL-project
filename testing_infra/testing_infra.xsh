@@ -63,6 +63,7 @@ def parse_cli_args():
     argparser.add_argument("--run", metavar="ACTION", default="all", help="Action to execute (e.g. run correctness tests)")
     argparser.add_argument("--implementation", nargs='+', default=[], help="Chose which implementation to run, can also be given multiple implementations")
     argparser.add_argument("--matrix-dimensions", nargs='+', default=[], help="For which matrix dimensions to run the tests")
+    argparser.add_argument("--block-size", default=8, type=int, help="Block size for blocking implementation")
 
     args = argparser.parse_args()
     return args
@@ -205,7 +206,7 @@ def set_global_variables(args):
     $C_BINARY = Path(f"{$C_IMPLEMENTATION_DIR}/build/bin/cavity_flow")
 
     $TESTING_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/.test_results").resolve(strict=True)
-    # $IMPLEMENTATION = args.implementation
+    $BLOCK_SIZE = args.block_size
 
     ## XONSH
     # throw error if bash command fails, otherwise we silently ignore the error
@@ -231,7 +232,7 @@ def get_all_implementations() -> str:
 
 def recompile_c_implementation():
     print("🎬 Re-compiling C implementation...")
-    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DBLOCK_SIZE=$BLOCK_SIZE
     # run make in C implementation dir and then cd back into the prev dir (infra dir)
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
 
