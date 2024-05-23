@@ -7,6 +7,28 @@
 #include "simulation.h"
 #include "cutoff_trapeze_simulation.h"
 
+#if defined(TRAPEZE_CUTOFF_VOLUME) && defined(TRAPEZE_CUTOFF_AREA)
+#error "At most one of TRAPEZE_CUTOFF_VOLUME, TRAPEZE_CUTOFF_AREA, can be set."
+#elif defined(TRAPEZE_CUTOFF_VOLUME) + defined(TRAPEZE_CUTOFF_AREA) + defined(TRAPEZE_CUTOFF_MAX_AREA) == 0
+#warning "No TRAPEZE_CUTOFF criterium set, using TRAPEZE_CUTOFF_VOLUME=(1<<18)"
+#define TRAPEZE_CUTOFF_VOLUME (1<<18)
+#endif
+
+int should_cutoff(const struct trapeze* trap){
+    const unsigned t0 = trap->t0, t1 = trap->t1;
+    const unsigned x0 = trap->x0, dx0 = trap->dx0, x1 = trap->x1, dx1 = trap->dx1;
+    const unsigned y0 = trap->y0, dy0 = trap->dy0, y1 = trap->y1, dy1 = trap->dy1;
+    const unsigned dt = t1 - t0;
+    const unsigned w = x1 - x0, h = y1 - y0;
+    const unsigned dw = dx1 - dx0, dh = dy1 - dy0;
+    const unsigned volume = dt * w * h + (h*dw + dh*dw) * (dt - 1)*dt/2 + dh*dw*(dt - 1)*dt*(2*dt - 1)/6;
+    const unsigned area = w * h;
+#ifdef TRAPEZE_CUTOFF_VOLUME
+    return volume <= TRAPEZE_CUTOFF_VOLUME;
+#elif defined(TRAPEZE_CUTOFF_AREA)
+    return area <= TRAPEZE_CUTOFF_AREA;
+#endif
+}
 
 static const struct simulation_vtable_ cutoff_trapeze_SIMULATION_VTABLE[] = {{
     .advance=(void (*)(struct simulation *, unsigned int, unsigned int, double))advance_cutoff_trapeze_simulation,
@@ -122,10 +144,7 @@ static void pressure_poisson_walk(cutoff_trapeze_simulation* sim,
     const unsigned x0 = trap->x0, dx0 = trap->dx0, x1 = trap->x1, dx1 = trap->dx1;
     const unsigned y0 = trap->y0, dy0 = trap->dy0, y1 = trap->y1, dy1 = trap->dy1;
     const unsigned dt = t1 - t0;
-    const unsigned w = x1 - x0, h = y1 - y0;
-    const unsigned dw = dx1 - dx0, dh = dy1 - dy0;
-    const unsigned volume = dt * w * h + (h*dw + dh*dw) * (dt - 1)*dt/2 + dh*dw*(dt - 1)*dt*(2*dt - 1)/6;
-    if(volume <= (1<<18)){ // arbitrary constant
+    if(should_cutoff(trap)){
         if(sim->poisson_len == sim->poisson_cap){
             struct trapeze* tmp = malloc(2*sim->poisson_cap*sizeof(struct trapeze));
             memcpy(tmp, sim->poisson_order, sim->poisson_len*sizeof(struct trapeze));
