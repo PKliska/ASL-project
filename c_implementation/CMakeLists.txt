@@ -18,20 +18,7 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/blocking_simulation.c
 			   src/utils.c)
 
-# Define a cache variable for the custom flag and define value
-set(BLOCK_SIZE "" CACHE STRING "Custom define value")
-
-# Set compilation options and include directories for the main target
-if (BLOCK_SIZE)
-	message(STATUS "❗️ Using BLOCK SIZE: ${BLOCK_SIZE}")
-	add_compile_definitions(BLOCK_SIZE=${BLOCK_SIZE})
-else()
-	message(STATUS "❗️ Using BLOCK SIZE: 8")
-	add_compile_definitions(BLOCK_SIZE=8)
-endif()
-
-target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma)
-
+target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma -ffast-math)
 target_include_directories(cavity_flow PUBLIC include)
 target_link_libraries(cavity_flow cargs)
 
