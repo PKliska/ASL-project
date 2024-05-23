@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Frequency of the processor
 FREQUENCY = 3.4e9 # 3.4 GHz
@@ -18,7 +19,9 @@ def plot_csv_files(csv_files, labels):
         # num_flops = 1811515 * steps
         df = pd.read_csv(csv_file)
         #performance = 1811515 * df['matrix_dimension'] / df['n_cycles']
+        # flops = 76_000_000_000
         df['n_cycles'] = df['n_cycles'] / FREQUENCY
+        # df['n_performance'] = flops/ df['n_cycles']
         sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label)
         # sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label, color=color)
 
@@ -26,6 +29,17 @@ def plot_csv_files(csv_files, labels):
     plt.ylabel("Runtime")
     plt.legend()
     plt.grid(axis='y', alpha=0.7)
+
+    l1 = np.sqrt(32*2**10/8)
+    l2 = np.sqrt(256*2**10/8)
+    l3 = np.sqrt(8*2**20/8) 
+    plt.vlines(l1, ymin=0, ymax=50, color='red')
+    plt.annotate('L1', (l1, 1.0), color='red', xytext=(5,0), textcoords='offset pixels')
+    plt.vlines(l2, ymin=0, ymax=50, color='red')
+    plt.annotate('L2', (l2, 1.0), color='red', xytext=(5,0), textcoords='offset pixels')
+    plt.vlines(l3, ymin=0, ymax=50, color='red')
+    plt.annotate('L3', (l3, 1.0), color='red', xytext=(5,0), textcoords='offset pixels')
+
 
     # add show ticks for matrix_dimension for which we run the algo
     plt.xticks(df["matrix_dimension"])
