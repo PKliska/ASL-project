@@ -12,6 +12,8 @@ cmake ..
 make
 bin/cavity_flow
 ```
+To do a debug build add the `-DCMAKE_BUILD_TYPE=Debug` flag to the cmake
+command.
 
 ## Running the testing infrastructure
 ```bash
