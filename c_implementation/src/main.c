@@ -15,6 +15,7 @@
 #include "cutoff_trapeze_simulation.h"
 #include "aligned_avx_simulation.h"
 #include "blocking_simulation.h"
+#include "utils.h"
 
 #include "tsc_x86.h"
 
@@ -262,10 +263,15 @@ int main(int argc, char *argv[])
         .size = 2.0};
 
     parse_args(&arguments, argc, argv);
-#ifdef DEBUG
-    fprintf(stderr, "output_file = %s\nnum_iter = %u\n",
-            arguments.output_file, arguments.num_iter);
-#endif
+    DPRINTF("Commandline options are:\n"
+            "output_file=%s\n"
+            "num_iter=%d\n"
+            "should_time=%d\n"
+            "dimension=%d\n"
+            "size=%lf\n",
+            arguments.output_file, arguments.num_iter,
+            arguments.should_time, arguments.dimension,
+            arguments.size);
 
     unsigned int pit = 50;
     double dt = 0.001;

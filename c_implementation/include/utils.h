@@ -1,6 +1,12 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <stdio.h>
+#ifdef NDEBUG
+    #define DPRINTF(format, ...) 
+#else
+    #define DPRINTF(format, ...) fprintf(stderr, format, __VA_ARGS__)
+#endif
+
 
 struct trapeze{
     unsigned t0, t1;

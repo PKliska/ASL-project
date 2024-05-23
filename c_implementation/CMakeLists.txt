@@ -34,6 +34,17 @@ target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma)
 
 target_include_directories(cavity_flow PUBLIC include)
 target_link_libraries(cavity_flow cargs)
+
+# add new preprocessor options here
+set(preprocessor_options TRAPEZE_CUTOFF_VOLUME
+			 TRAPEZE_CUTOFF_AREA)
+foreach(option IN LISTS preprocessor_options)
+	if(DEFINED ${option})
+		message(STATUS ${option}=${${option}})
+		target_compile_definitions(cavity_flow PUBLIC
+			${option}=${${option}})
+	endif()
+endforeach()
 set_target_properties(cavity_flow
 		      PROPERTIES
 		      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
