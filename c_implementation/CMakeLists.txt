@@ -16,6 +16,7 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/precomputed_trapeze_simulation.c
 			   src/cutoff_trapeze_simulation.c
 			   src/blocking_simulation.c
+			   src/skewed_simulation.c
 			   src/utils.c)
 
 target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma -ffast-math)
