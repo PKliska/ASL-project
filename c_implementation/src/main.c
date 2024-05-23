@@ -15,6 +15,7 @@
 #include "cutoff_trapeze_simulation.h"
 #include "aligned_avx_simulation.h"
 #include "blocking_simulation.h"
+#include "skewed_simulation.h"
 #include "utils.h"
 
 #include "tsc_x86.h"
@@ -54,7 +55,12 @@ static const struct implementation IMPLEMENTATIONS[] = {
     {.name = "aligned_AVX",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_aligned_AVX_simulation},
     {.name = "blocking",
-     .create = (struct simulation * (*)(size_t, double, double, double)) new_blocking_simulation}};
+     .create = (struct simulation * (*)(size_t, double, double, double)) new_blocking_simulation
+    },    
+    {.name = "skewed",
+     .create = (struct simulation * (*)(size_t, double, double, double)) new_skewed_simulation
+    }
+};
 
 struct arguments
 {
