@@ -47,6 +47,13 @@ python3 -m pip install -r requirements.txt
 # runs the timing test for multiple implementations and for specific matrix dimensions
 ./run-script.sh ./testing_infra.xsh --run timing --implementation baseline preallocated --matrix-dimensions 32 64 96
 
+# Remake the plot for the last timing test, i.e. doesn't run anything, just takes the measurements in that folder and
+# re-generates the plot. Can be useful if you wanna combine multiple previous timing tests into 1 plot, e.g. you run a
+# separate timing test just to baseline and another separata for prealloc, then you can just copy/paste the CSV files
+# from one test into the other one and generate a plot which contains both, instead of wasting time by running a
+# separate timing test which contains both :)
+./run-script.sh ./testing_infra.xsh --run remake_plot
+
 
 ```
 
