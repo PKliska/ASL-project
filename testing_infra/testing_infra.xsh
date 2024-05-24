@@ -68,6 +68,50 @@ def parse_cli_args():
     args = argparser.parse_args()
     return args
 
+def get_flops_and_cycles_count(implementation: str, matrix_dimension: int):
+    temp_dir = $( mktemp -d ).strip()
+    print(temp_dir)
+
+    output_file = f"{temp_dir}/stats.txt"
+
+    cycles = $( perf stat \
+        -x "," \
+        --output @(output_file) \
+        --event=fp_arith_inst_retired.128b_packed_double,fp_arith_inst_retired.128b_packed_single,fp_arith_inst_retired.256b_packed_double,fp_arith_inst_retired.256b_packed_single,fp_arith_inst_retired.scalar_double,fp_arith_inst_retired.scalar_single \
+        $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension)
+    )
+
+    n_cycles = float(cycles.strip().split()[-1])
+
+    perf_res = $(cat @(output_file))
+
+    flop_measurements = [int(l.split(",")[0]) / 4 for l in perf_res.splitlines()[2:]]
+    # print(flop_measurements)
+
+    n_128b_packed_double = flop_measurements[0]
+    n_128b_packed_single = flop_measurements[1]
+    n_256b_packed_double = flop_measurements[2]
+    n_256b_packed_single = flop_measurements[3]
+    n_scalar_double      = flop_measurements[4]
+    n_scalar_single      = flop_measurements[5]
+
+    total_flops = (
+          2 * n_128b_packed_double
+        + 4 * n_128b_packed_single
+        + 4 * n_256b_packed_double
+        + 8 * n_256b_packed_single
+        + 1 * n_scalar_double
+        + 1 * n_scalar_single
+    )
+
+    # print(total_flops)
+    return (total_flops, n_cycles)
+
+
+
+
+
+
 def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
     print("\n🟠 Starting timing test...")
 
@@ -77,11 +121,11 @@ def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
         data = []
         for matrix_dimension in dimensions_which_to_test:
             print(f"Simulating {implementation} with dimension={matrix_dimension}...", end="", flush=True)
-            output = $( $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension) )
-            n_cycles = float(output.strip().split()[-1])
+
+            n_flops, n_cycles = get_flops_and_cycles_count(implementation, matrix_dimension)
 
             print(f" took {n_cycles} cycles ({n_cycles/(3.4*10**9)} sec)")
-            data.append((matrix_dimension, n_cycles))
+            data.append((matrix_dimension, n_cycles, n_flops))
 
         print(data)
 
@@ -90,7 +134,7 @@ def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
 
         with open(f"{root_dir_for_this_test}/{implementation}.csv", "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["matrix_dimension", "n_cycles"])
+            writer.writerow(["matrix_dimension", "n_cycles", "n_flops"])
             writer.writerows(data)
 
     all_implementations = [f"{i}.csv" for i in implementations]
@@ -180,7 +224,8 @@ def check_if_c_output_matches_python_output_for(matrix_dimension: int, implement
 
     # run python implementation & save output
     python_output_path = f"{root_dir_for_this_test}/output_python.csv"
-    if has_python_been_run_previously := Path(python_output_path).exists():
+    # if has_python_been_run_previously := Path(python_output_path).exists():
+    if has_python_been_run_previously := False:
         pass
     else:
         python ./python_implementation.py @(python_output_path) @(matrix_dimension)
@@ -232,7 +277,7 @@ def get_all_implementations() -> str:
 
 def recompile_c_implementation():
     print("🎬 Re-compiling C implementation...")
-    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DBLOCK_SIZE=$BLOCK_SIZE
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DBLOCK_SIZE=$BLOCK_SIZE -DNDEBUG=YOLOL
     # run make in C implementation dir and then cd back into the prev dir (infra dir)
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
 
