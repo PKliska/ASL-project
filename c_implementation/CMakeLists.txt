@@ -19,13 +19,13 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/skewed_simulation.c
 			   src/utils.c)
 
-target_compile_options(cavity_flow PUBLIC -g -O3 -Wall -Wextra -mavx2 -mfma -ffast-math)
+target_compile_options(cavity_flow PUBLIC -g -fopt-info -O3 -Wall -Wextra -mavx2 -mfma -ffast-math)
 target_include_directories(cavity_flow PUBLIC include)
 target_link_libraries(cavity_flow cargs)
 
 # add new preprocessor options here
 set(preprocessor_options TRAPEZE_CUTOFF_VOLUME
-			 TRAPEZE_CUTOFF_AREA)
+			 TRAPEZE_CUTOFF_AREA NDEBUG)
 foreach(option IN LISTS preprocessor_options)
 	if(DEFINED ${option})
 		message(STATUS ${option}=${${option}})
