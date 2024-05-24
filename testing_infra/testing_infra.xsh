@@ -10,7 +10,7 @@ def main():
     args = parse_cli_args()
     set_global_variables(args)
 
-    # disable_turbo_boost()
+    disable_turbo_boost()
 
     if should_only_rerun_plotter := args.run == "remake_plot":
         # re-runs the plotting code with the data of the last timing test
@@ -20,10 +20,13 @@ def main():
         all_implementations = [p.name for p in root_dir_for_this_test.glob("*.csv")]
         all_implementations_comma_sep = ",".join(all_implementations)
 
-        # make plot
-        cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot.py @(all_implementations_comma_sep)  && cd -
+        # make plots
+        cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot_performance.py @(all_implementations_comma_sep)  && cd -
+        cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot_runtime.py     @(all_implementations_comma_sep)  && cd -
 
-        print(f"\n✅ Remade plot, saved at '{root_dir_for_this_test}/plot.png'\n")
+        print(f"\n✅ Remade plot, saved plot at '{root_dir_for_this_test}/plot_perf.png'\n")
+        print(f"\n✅ Remade plot, saved plot at '{root_dir_for_this_test}/plot_runtime.png'\n")
+
         exit(0)
 
 
@@ -70,9 +73,9 @@ def parse_cli_args():
 
 def get_flops_and_cycles_count(implementation: str, matrix_dimension: int):
     temp_dir = $( mktemp -d ).strip()
-    print(temp_dir)
 
     output_file = f"{temp_dir}/stats.txt"
+    print(f"\n{output_file}")
 
     cycles = $( perf stat \
         -x "," \
@@ -140,10 +143,12 @@ def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
     all_implementations = [f"{i}.csv" for i in implementations]
     all_implementations_comma_sep = ",".join(all_implementations)
 
-    # make plot
-    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot.py @(all_implementations_comma_sep)  && cd -
+    # make plots
+    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot_performance.py @(all_implementations_comma_sep)  && cd -
+    cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot_runtime.py     @(all_implementations_comma_sep)  && cd -
 
-    print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot.png'\n")
+    print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot_perf.png'\n")
+    print(f"\n✅ Finished timing test, saved plot at '{root_dir_for_this_test}/plot_runtime.png'\n")
 
 
 def run_correctness_test(implementation: str, dimensions_which_to_test: list[int]):
@@ -261,12 +266,13 @@ def set_global_variables(args):
     # $XONSH_TRACE_SUBPROC = True
 
 def disable_turbo_boost():
-    if is_turbo_boost_enabled := $( sudo rdmsr -p0 0x1a0 -f 38:38 ) == "0\n":
-        print("✋🛑 Turbo boost is not disabled! Disabling turbo boost...")
-        wrmsr -p0 0x1a0 0x4000850089
-        wrmsr -p1 0x1a0 0x4000850089
-        wrmsr -p2 0x1a0 0x4000850089
-        wrmsr -p3 0x1a0 0x4000850089
+    if is_turbo_boost_enabled := $( cat /sys/devices/system/cpu/intel_pstate/no_turbo ) == "0\n":
+        print("✋🛑 Turbo boost is not disabled! Disable turbo boost by running the below commands!\n")
+        print("sudo wrmsr -p0 0x1a0 0x4000850089")
+        print("sudo wrmsr -p1 0x1a0 0x4000850089")
+        print("sudo wrmsr -p2 0x1a0 0x4000850089")
+        print("sudo wrmsr -p3 0x1a0 0x4000850089")
+        exit(-1)
 
     print("✅ Turbo boost is disabled\n")
 
