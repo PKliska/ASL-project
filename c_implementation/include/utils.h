@@ -4,7 +4,11 @@
 #ifdef NDEBUG
     #define DPRINTF(format, ...) 
 #else
-    #define DPRINTF(format, ...) fprintf(stderr, format, __VA_ARGS__)
+    #define DPRINTF(format, ...)         \
+{                                        \
+    fprintf(stderr, format, __VA_ARGS__);\
+    fflush(stderr);                      \
+}
 #endif
 
 

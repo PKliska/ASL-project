@@ -7,15 +7,20 @@
 #include "utils.h"
 #include "trapeze_macros.h"
 
-#ifndef SKEWING_BLOCK_SIZE
-#warning "SKEWING_BLOCK_SIZE was not defined, setting to default (16)"
-#define SKEWING_BLOCK_SIZE (36)
+#ifndef SKEWING_BLOCK_SIZE_X
+#warning "SKEWING_BLOCK_SIZE_X was not defined, setting to default (36)"
+#define SKEWING_BLOCK_SIZE_X (36)
+#endif
+#ifndef SKEWING_BLOCK_SIZE_Y
+#warning "SKEWING_BLOCK_SIZE_Y was not defined, setting to default (36)"
+#define SKEWING_BLOCK_SIZE_Y (36)
 #endif
 #ifndef SKEWING_TIMESTEPS
 #warning "SKEWING_TIMESTEPS was not defined, setting to default (10)"
 #define SKEWING_TIMESTEPS (10)
 #endif
-#if SKEWING_BLOCK_SIZE <= SKEWING_TIMESTEPS
+#if SKEWING_BLOCK_SIZE_X <= SKEWING_TIMESTEPS \
+ || SKEWING_BLOCK_SIZE_Y <= SKEWING_TIMESTEPS
 #error "SKEWING_BLOCK_SIZE must be greater than SKEWING_TIMESTEPS"
 #endif
 
@@ -38,8 +43,8 @@ skewed_simulation* new_skewed_simulation(
 void init_skewed_simulation(skewed_simulation* sim,
     size_t dimension, double size, double rho, double nu){
     init_faster_math_simulation(sim, dimension, size, rho, nu);
-    assert(dimension % SKEWING_BLOCK_SIZE == 0);
-    assert(dimension / SKEWING_BLOCK_SIZE >= 3);
+    assert((dimension + SKEWING_BLOCK_SIZE_X - 1) / SKEWING_BLOCK_SIZE_X >= 2);
+    assert((dimension + SKEWING_BLOCK_SIZE_Y - 1) / SKEWING_BLOCK_SIZE_Y >= 2);
     sim->base.vtable_ = SKEWED_SIMULATION_VTABLE;
 }
 
@@ -54,175 +59,43 @@ static void skewed_pressure_poisson(skewed_simulation* sim,
     double *restrict b = sim->b;
     double *restrict p = sim->p;
     double *restrict pn = sim->pn;
-    for(int bt=0;bt < 4; bt+=2){
-        int t0 = bt * SKEWING_TIMESTEPS + 1;
-        int t1 = (bt + 1) * SKEWING_TIMESTEPS + 1;
-        int t2 = (bt + 1) * SKEWING_TIMESTEPS + 1;
-        int t3 = (bt + 2) * SKEWING_TIMESTEPS + 1;
-
-        //handle first block of first row
-        DO_TRAPEZE_TOP_LEFT(b, p, pn, d,
-                   t0, t1,
-                   0, 0, SKEWING_BLOCK_SIZE, -1,
-                   0, 0, SKEWING_BLOCK_SIZE, -1);
-        for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-            int y0 = bj*SKEWING_BLOCK_SIZE;
-            int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_TOP(b, p, pn, d,
-                       t0, t1,
-                       0, 0, SKEWING_BLOCK_SIZE, -1,
-                       y0, -1, y1, -1);
-        }
-        DO_TRAPEZE_TOP_RIGHT(b, p, pn, d,
-                   t0, t1,
-                   0, 0, SKEWING_BLOCK_SIZE, -1,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0);
-        for(int bi=1;bi<d/SKEWING_BLOCK_SIZE-1;bi++){
-            int x0 = bi*SKEWING_BLOCK_SIZE;
-            int x1 = (bi+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_LEFT(b, p, pn, d,
-                       t0, t1,
-                       x0, -1, x1, -1,
-                       0, 0, SKEWING_BLOCK_SIZE, -1);
-            for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-                int y0 = bj*SKEWING_BLOCK_SIZE;
-                int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-                DO_TRAPEZE_MID(b, p, pn, d,
-                           t0, t1,
-                           x0, -1, x1, -1,
-                           y0, -1, y1, -1);
-            }
-            DO_TRAPEZE_RIGHT(b, p, pn, d,
-                       t0, t1,
-                       x0, -1, x1, -1,
-                       d-SKEWING_BLOCK_SIZE, -1, d, 0);
-        }
-        DO_TRAPEZE_BOTTOM_LEFT(b, p, pn, d,
-                   t0, t1,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                   0, 0, SKEWING_BLOCK_SIZE, -1);
-        for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-            int y0 = bj*SKEWING_BLOCK_SIZE;
-            int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_BOTTOM(b, p, pn, d,
-                       t0, t1,
-                       d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                       y0, -1, y1, -1);
-        }
-        DO_TRAPEZE_BOTTOM_RIGHT(b, p, pn, d,
-                   t0, t1,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0);
-
-        //unroll once
-        DO_TRAPEZE_TOP_LEFT(b, p, pn, d,
-                   t2, t3,
-                   0, 0, SKEWING_BLOCK_SIZE, -1,
-                   0, 0, SKEWING_BLOCK_SIZE, -1);
-        for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-            int y0 = bj*SKEWING_BLOCK_SIZE;
-            int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_TOP(b, p, pn, d,
-                       t2, t3,
-                       0, 0, SKEWING_BLOCK_SIZE, -1,
-                       y0, -1, y1, -1);
-        }
-        DO_TRAPEZE_TOP_RIGHT(b, p, pn, d,
-                   t2, t3,
-                   0, 0, SKEWING_BLOCK_SIZE, -1,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0);
-        for(int bi=1;bi<d/SKEWING_BLOCK_SIZE-1;bi++){
-            int x0 = bi*SKEWING_BLOCK_SIZE;
-            int x1 = (bi+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_LEFT(b, p, pn, d,
-                       t2, t3,
-                       x0, -1, x1, -1,
-                       0, 0, SKEWING_BLOCK_SIZE, -1);
-            for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-                int y0 = bj*SKEWING_BLOCK_SIZE;
-                int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-                DO_TRAPEZE_MID(b, p, pn, d,
-                           t2, t3,
-                           x0, -1, x1, -1,
-                           y0, -1, y1, -1);
-            }
-            DO_TRAPEZE_RIGHT(b, p, pn, d,
-                       t2, t3,
-                       x0, -1, x1, -1,
-                       d-SKEWING_BLOCK_SIZE, -1, d, 0);
-        }
-        DO_TRAPEZE_BOTTOM_LEFT(b, p, pn, d,
-                   t2, t3,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                   0, 0, SKEWING_BLOCK_SIZE, -1);
-        for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-            int y0 = bj*SKEWING_BLOCK_SIZE;
-            int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_BOTTOM(b, p, pn, d,
-                       t2, t3,
-                       d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                       y0, -1, y1, -1);
-        }
-        DO_TRAPEZE_BOTTOM_RIGHT(b, p, pn, d,
-                   t2, t3,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0);
+    const int time_blocks = (pit+SKEWING_TIMESTEPS-1) / SKEWING_TIMESTEPS;
+    const int last_time = (pit-1) % SKEWING_TIMESTEPS + 1;
+    const int x_blocks = (d+SKEWING_BLOCK_SIZE_X-1) / SKEWING_BLOCK_SIZE_X;
+    const int y_blocks = (d+SKEWING_BLOCK_SIZE_Y-1) / SKEWING_BLOCK_SIZE_Y;
+    const int last_block_x = (d-1) % SKEWING_BLOCK_SIZE_X + 1;
+    const int last_block_y = (d-1) % SKEWING_BLOCK_SIZE_Y + 1;
+    int bt;
+    for(bt=0;bt + 1 < time_blocks - 1; bt += 2){
+        const int t0 = bt * SKEWING_TIMESTEPS + 1;
+        const int t1 = (bt+1) * SKEWING_TIMESTEPS + 1;
+        const int t2 = (bt+2) * SKEWING_TIMESTEPS + 1;
+        DO_TIME_BLOCK(b, p, pn, d,
+                      t0, t1,
+                      x_blocks, last_block_x,
+                      y_blocks, last_block_y);
+        DO_TIME_BLOCK(b, p, pn, d,
+                      t1, t2,
+                      x_blocks, last_block_x,
+                      y_blocks, last_block_y);
     }
-    int t9 = 4 * SKEWING_TIMESTEPS + 1;
-    int t10 = 5 * SKEWING_TIMESTEPS + 1;
-    DO_TRAPEZE_TOP_LEFT(b, p, pn, d,
-                   t9, t10,
-                   0, 0, SKEWING_BLOCK_SIZE, -1,
-                   0, 0, SKEWING_BLOCK_SIZE, -1);
-        for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-            int y0 = bj*SKEWING_BLOCK_SIZE;
-            int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_TOP(b, p, pn, d,
-                       t9, t10,
-                       0, 0, SKEWING_BLOCK_SIZE, -1,
-                       y0, -1, y1, -1);
-        }
-        DO_TRAPEZE_TOP_RIGHT(b, p, pn, d,
-                   t9, t10,
-                   0, 0, SKEWING_BLOCK_SIZE, -1,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0);
-        for(int bi=1;bi<d/SKEWING_BLOCK_SIZE-1;bi++){
-            int x0 = bi*SKEWING_BLOCK_SIZE;
-            int x1 = (bi+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_LEFT(b, p, pn, d,
-                       t9, t10,
-                       x0, -1, x1, -1,
-                       0, 0, SKEWING_BLOCK_SIZE, -1);
-            for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-                int y0 = bj*SKEWING_BLOCK_SIZE;
-                int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-                DO_TRAPEZE_MID(b, p, pn, d,
-                           t9, t10,
-                           x0, -1, x1, -1,
-                           y0, -1, y1, -1);
-            }
-            DO_TRAPEZE_RIGHT(b, p, pn, d,
-                       t9, t10,
-                       x0, -1, x1, -1,
-                       d-SKEWING_BLOCK_SIZE, -1, d, 0);
-        }
-        DO_TRAPEZE_BOTTOM_LEFT(b, p, pn, d,
-                   t9, t10,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                   0, 0, SKEWING_BLOCK_SIZE, -1);
-        for(int bj=1;bj<d/SKEWING_BLOCK_SIZE-1;bj++){
-            int y0 = bj*SKEWING_BLOCK_SIZE;
-            int y1 = (bj+1)*SKEWING_BLOCK_SIZE;
-            DO_TRAPEZE_BOTTOM(b, p, pn, d,
-                       t9, t10,
-                       d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                       y0, -1, y1, -1);
-        }
-        DO_TRAPEZE_BOTTOM_RIGHT(b, p, pn, d,
-                   t9, t10,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0,
-                   d-SKEWING_BLOCK_SIZE, -1, d, 0);
-    //if(pit % 2 == 1) SWAP(double*, sim->p, sim->pn);
+    if(bt < time_blocks - 1){
+        const int t0 = bt * SKEWING_TIMESTEPS + 1;
+        const int t1 = (bt+1) * SKEWING_TIMESTEPS + 1;
+        DO_TIME_BLOCK(b, p, pn, d,
+                      t0, t1,
+                      x_blocks, last_block_x,
+                      y_blocks, last_block_y);
+    }
+    DO_TIME_BLOCK(b, p, pn, d,
+                  pit-last_time+1, pit+1,
+                  x_blocks, last_block_x,
+                  y_blocks, last_block_y)
+    if(pit % 2 == 1) SWAP(double*, sim->p, sim->pn);
+    sim->p[0] = sim->p[1];
+    sim->p[d-1] = sim->p[d-2];
+    sim->p[(d-1)*d+0] = sim->p[(d-1)*d+1];
+    sim->p[(d-1)*d+d-1] = sim->p[(d-1)*d+d-2];
 }
 // 22 * (d-2)(d-2)*pit + 2
 
@@ -313,7 +186,6 @@ static void step_skewed_simulation(
 void advance_skewed_simulation(skewed_simulation* sim,
                  unsigned int steps,
                  unsigned int pit, double dt){
-    assert(pit % SKEWING_TIMESTEPS == 0);
     for(unsigned int i=0;i<steps;i++){
         step_skewed_simulation(sim, pit, dt);
     }
