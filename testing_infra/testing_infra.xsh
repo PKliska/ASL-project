@@ -12,77 +12,57 @@ def main():
 
     disable_turbo_boost()
 
+    if should_only_rerun_plotter := args.run == "remake_plot":
+        # re-runs the plotting code with the data of the last timing test
+        timing_dir = Path(f"{$TESTING_DIR}/timing/")
+        root_dir_for_this_test = sorted(timing_dir.glob("*"))[-1]
+
+        all_implementations = [p.name for p in root_dir_for_this_test.glob("*.csv")]
+        all_implementations_comma_sep = ",".join(all_implementations)
+
+        # make plots
+        cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot_performance.py @(all_implementations_comma_sep)  && cd -
+        cd @(root_dir_for_this_test) && python $TESTING_INFRA_ROOT_DIR/timing_plot_runtime.py     @(all_implementations_comma_sep)  && cd -
+
+        print(f"\n✅ Remade plot, saved plot at '{root_dir_for_this_test}/plot_perf.png'\n")
+        print(f"\n✅ Remade plot, saved plot at '{root_dir_for_this_test}/plot_runtime.png'\n")
+
+        exit(0)
+
+    if should_only_run_skewed_heatmap := args.run == "heatmap":
+        generate_heatmap_plots_for_skewed()
+        exit(0)
+
     recompile_c_implementation()
     mkdir --parents "$TESTING_DIR"
 
+    if has_user_defined_implementations := len(args.implementation) > 0:
+        implementations = args.implementation
+    else:
+        implementations = get_all_implementations()
 
-    # HERE selina code
+    if has_user_defined_test_cases := len(args.matrix_dimensions) > 0:
+        test_cases = [int(t) for t in args.matrix_dimensions]
+    else:
+        test_cases = [32, 64, 128, 640, 960, 1280]
 
-    matrix_dimension = 1296
-    block_size = [27,32,36,48,54,72,81,96, 108]
-    times = [1,2,5,10,25]
-    # block_size = [24]
-    # times = [10]
+    # based on arguments run timing plot, consystency, correctness, etc.
+    if args.run == "timing":
+        run_timing_test(implementations, test_cases)
+    elif args.run == "correctness":
+        for i in implementations:
+            run_correctness_test(i, test_cases)
+    elif args.run == "consystency":
+        for i in implementations:
+            run_consystency_test(i, test_cases)
+    elif args.run == "all":
+        for i in implementations:
+            run_correctness_test(i, test_cases)
+            run_consystency_test(i, test_cases)
 
-    for block in block_size:
-        for timestamp in times:
-
-            $SKEWING_TIMESTEPS = timestamp
-            $SKEWING_BLOCK_SIZE = block
-
-            print("Block: " + str(block))
-            print("Timestamp" + str(timestamp))
-
-            ### recompile binary
-            print("🎬 Re-compiling C implementation...")
-            cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE=$SKEWING_BLOCK_SIZE -DSKEWING_TIMESTEPS=$SKEWING_TIMESTEPS -DNDEBUG=YOLOL
-            # run make in C implementation dir and then cd back into the prev dir (infra dir)
-            cd $C_IMPLEMENTATION_DIR/build && make && cd -
-            print("✅ Finished re-compiling C implementation!\n")
-
-
-            # measuermente (time and perf)
-            n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
-
-            with open('performance_metrics.csv', mode='a', newline='') as file:
-             writer = csv.writer(file)
-             writer.writerow(['FLOPs', 'Cycles', 'Block size', 'Times'])  # Writing the header
-             writer.writerow([n_flops, n_cycles, block, timestamp])  # Writing the data
-
-            print("Data saved to performance_metrics.csv")
-
-
-
-
-
-
-    # if has_user_defined_implementations := len(args.implementation) > 0:
-    #     implementations = args.implementation
-    # else:
-    #     implementations = get_all_implementations()
-
-    # if has_user_defined_test_cases := len(args.matrix_dimensions) > 0:
-    #     test_cases = [int(t) for t in args.matrix_dimensions]
-    # else:
-    #     test_cases = [32, 64, 128, 640, 960, 1280]
-
-    # # based on arguments run timing plot, consystency, correctness, etc.
-    # if args.run == "timing":
-    #     run_timing_test(implementations, test_cases)
-    # elif args.run == "correctness":
-    #     for i in implementations:
-    #         run_correctness_test(i, test_cases)
-    # elif args.run == "consystency":
-    #     for i in implementations:
-    #         run_consystency_test(i, test_cases)
-    # elif args.run == "all":
-    #     for i in implementations:
-    #         run_correctness_test(i, test_cases)
-    #         run_consystency_test(i, test_cases)
-
-    #     run_timing_test(implementations, test_cases)
-    # else:
-    #     raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
+        run_timing_test(implementations, test_cases)
+    else:
+        raise Exception(f"Can't run action '{args.run}', invalid option. Did you mispell?")
 
 def parse_cli_args():
     argparser = ArgumentParser(description="")
@@ -93,6 +73,37 @@ def parse_cli_args():
 
     args = argparser.parse_args()
     return args
+
+def generate_heatmap_plots_for_skewed():
+    matrix_dimension = 1296
+    block_size = [27,32,36,48,54,72,81,96, 108]
+    times = [1,2,5,10,25]
+
+    # with open('performance_metrics.csv', mode='w', newline='') as file:
+    with open('performance_metrics.csv', mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['FLOPs', 'Cycles', 'Block size', 'Timestamps', 'Matrix dimension'])  # Writing the header
+
+        for block in block_size:
+            for timestamp in times:
+                print("Block: " + str(block))
+                print("Timestamp" + str(timestamp))
+
+                ### recompile binary
+                print("🎬 Re-compiling C implementation...")
+                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE=@(block) -DSKEWING_TIMESTEPS=@(timestamp) -DNDEBUG=YOLOL > /dev/null
+                # run make in C implementation dir and then cd back into the prev dir (infra dir)
+                cd $C_IMPLEMENTATION_DIR/build && make && cd -
+                print("✅ Finished re-compiling C implementation!\n")
+
+                # measuermente (time and perf)
+                n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
+                writer.writerow([n_flops, n_cycles, block, timestamp, matrix_dimension])  # Writing the data
+                print("Data saved to performance_metrics.csv")
+
+    # gen plots
+    python ./skew_heatmap.py performance
+    python ./skew_heatmap.py runtime
 
 def get_flops_and_cycles_count(implementation: str, matrix_dimension: int):
     temp_dir = $( mktemp -d ).strip()
