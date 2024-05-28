@@ -6,6 +6,8 @@ c_implementation/bin/
 
 # ignore temp files created while running tests
 .test_results/
+
+# ignore collected measurements
 testing_infra/heatmap_perf.png
 testing_infra/heatmap_runtime.png
-testing_infra/performance_metrics.csv
+testing_infra/performance_metrics*.csv

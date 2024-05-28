@@ -75,9 +75,9 @@ def parse_cli_args():
     return args
 
 def generate_heatmap_plots_for_skewed():
-    matrix_dimension = 1296
-    block_size = [27,32,36,48,54,72,81,96, 108]
-    times = [1,2,5,10,25]
+    matrix_dimension = 1600
+    block_size = [8, 32, 64]
+    times = [25, 64, 128]
 
     # with open('performance_metrics.csv', mode='w', newline='') as file:
     with open('performance_metrics.csv', mode='a', newline='') as file:
@@ -91,14 +91,15 @@ def generate_heatmap_plots_for_skewed():
 
                 ### recompile binary
                 print("🎬 Re-compiling C implementation...")
-                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE=@(block) -DSKEWING_TIMESTEPS=@(timestamp) -DNDEBUG=YOLOL > /dev/null
+                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE=@(block) -DSKEWING_TIMESTEPS=@(timestamp) -DNDEBUG=YOLOL
                 # run make in C implementation dir and then cd back into the prev dir (infra dir)
-                cd $C_IMPLEMENTATION_DIR/build && make && cd -
+                cd $C_IMPLEMENTATION_DIR/build && make &> /dev/null && cd -
                 print("✅ Finished re-compiling C implementation!\n")
 
                 # measuermente (time and perf)
                 n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
                 writer.writerow([n_flops, n_cycles, block, timestamp, matrix_dimension])  # Writing the data
+                writer.flush()
                 print("Data saved to performance_metrics.csv")
 
     # gen plots

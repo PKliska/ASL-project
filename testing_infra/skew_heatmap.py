@@ -7,7 +7,7 @@ import seaborn as sns
 
 import pandas as pd
 
-df = pd.read_csv('performance_metrics.csv')
+df = pd.read_csv('performance_metrics-1900.csv')
 
 if has_diff_matrix_dims := len(df['Matrix dimension'].unique()) > 1:
     raise Exception("Error: Trying to plot single heatmap for diff matrix sizes (they need to be the same)")
@@ -22,16 +22,16 @@ data_runtime = df.pivot_table('Runtime', 'Block size', 'Timestamps', fill_value=
 
 
 # Dimensions for the x and y axes
-x_labels = [1,2,5,10,25]
-y_labels = [27,32,36,48,54,72,81,96, 108]
+x_labels = df['Timestamps'].unique()
+y_labels = df['Block size'].unique()
 
 # Create the heatmap
 plt.figure(figsize=(8, 6))
 if sys.argv[1].startswith("perf"):
-    sns.heatmap(data_perf, annot=True, fmt=".1f", cmap="YlOrRd", xticklabels=x_labels, yticklabels=y_labels)
+    sns.heatmap(data_perf, annot=True, fmt=".2f", cmap="YlOrRd", xticklabels=x_labels, yticklabels=y_labels)
 else:
     # reverse colors cuz lower (runtime) is better
-    sns.heatmap(data_runtime, annot=True, fmt=".1f", cmap="YlOrRd_r", xticklabels=x_labels, yticklabels=y_labels)
+    sns.heatmap(data_runtime, annot=True, fmt=".2f", cmap="YlOrRd_r", xticklabels=x_labels, yticklabels=y_labels)
 
 # Add labels and title
 plt.xlabel("Timestamp size")
