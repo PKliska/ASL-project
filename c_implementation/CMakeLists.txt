@@ -25,7 +25,7 @@ target_link_libraries(cavity_flow cargs)
 
 # add new preprocessor options here
 set(preprocessor_options TRAPEZE_CUTOFF_VOLUME
-			 TRAPEZE_CUTOFF_AREA NDEBUG)
+			 TRAPEZE_CUTOFF_AREA NDEBUG SKEWING_BLOCK_SIZE SKEWING_TIMESTEPS )
 foreach(option IN LISTS preprocessor_options)
 	if(DEFINED ${option})
 		message(STATUS ${option}=${${option}})
