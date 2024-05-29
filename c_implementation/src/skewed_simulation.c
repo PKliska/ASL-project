@@ -8,16 +8,13 @@
 #include "trapeze_macros.h"
 
 #ifndef SKEWING_BLOCK_SIZE_X
-#warning "SKEWING_BLOCK_SIZE_X was not defined, setting to default (36)"
-#define SKEWING_BLOCK_SIZE_X (36)
+#error "SKEWING_BLOCK_SIZE_X was not defined, setting to default (36)"
 #endif
 #ifndef SKEWING_BLOCK_SIZE_Y
-#warning "SKEWING_BLOCK_SIZE_Y was not defined, setting to default (36)"
-#define SKEWING_BLOCK_SIZE_Y (36)
+#error "SKEWING_BLOCK_SIZE_Y was not defined, setting to default (36)"
 #endif
 #ifndef SKEWING_TIMESTEPS
-#warning "SKEWING_TIMESTEPS was not defined, setting to default (10)"
-#define SKEWING_TIMESTEPS (10)
+#error "SKEWING_TIMESTEPS was not defined, setting to default (10)"
 #endif
 #if SKEWING_BLOCK_SIZE_X <= SKEWING_TIMESTEPS \
  || SKEWING_BLOCK_SIZE_Y <= SKEWING_TIMESTEPS
@@ -35,7 +32,7 @@ static const struct simulation_vtable_ SKEWED_SIMULATION_VTABLE[] = {{
 
 skewed_simulation* new_skewed_simulation(
     size_t dimension, double size, double rho, double nu){
-    skewed_simulation* sim = malloc(sizeof(*sim)); 
+    skewed_simulation* sim = malloc(sizeof(*sim));
     init_skewed_simulation(sim, dimension, size, rho, nu);
     return sim;
 }
@@ -105,7 +102,7 @@ static void skewed_pressure_poisson(skewed_simulation* sim,
 */
 static void step_skewed_simulation(
     skewed_simulation* sim, unsigned int pit, double dt){
-    
+
     faster_math_build_up_b(sim, dt);
     skewed_pressure_poisson(sim, pit);
     const size_t d = sim->d;
@@ -163,7 +160,7 @@ static void step_skewed_simulation(
                       +nu * dtsqds *
                        (vn_right + vn_left + vn_below + vn_above
                         - 4*vn_here);
-            
+
             }
         }
         for(size_t i=0;i<d;i++){
@@ -178,7 +175,7 @@ static void step_skewed_simulation(
             v[d*0      + j] = 0;
             v[d*(d-1) + j] = 0;
         }
-} // flops ? 
+} // flops ?
 
 /* Advance the simulation sim by steps steps of size dt, using pit
  * iterations for the calculation of pressure.
