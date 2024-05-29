@@ -76,41 +76,58 @@ def parse_cli_args():
 
 def generate_heatmap_plots_for_skewed():
     matrix_dimension = 1600
-    block_size = [8, 32, 64]
-    times = [25, 64, 128]
+    # block_size = [16, 24, 32, 36, 40, 44, 48, 52, 56, 60, 64]
+    # times = [8, 15, 16, 24, 31, 32, 40, 47, 48, 55, 56, 63, 64]
 
-    # with open('performance_metrics.csv', mode='w', newline='') as file:
-    with open('performance_metrics.csv', mode='a', newline='') as file:
+    # humongous plot
+    block_size = [8, 16, 24, 32, 36, 40, 44, 45, 46, 47, 48, 50, 52, 56, 60, 64, 80, 96]
+    times = sorted([8, 15, 16, 24, 31, 32, 40, 47, 48, 55, 56, 63, 64] + [7, 20, 25, 27, 28, 30, 36, 38, 42, 43, 44, 45, 46, 49, 50, 52])
+
+    current_time = strftime("%Y-%m-%d_%H:%M:%S")
+
+    root_dir_for_this_test = f"{$TESTING_DIR}/heatmap/{current_time}"
+    mkdir --parents @(root_dir_for_this_test)
+    measurements_file = f'{root_dir_for_this_test}/performance_metrics.csv'
+
+    with open(measurements_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['FLOPs', 'Cycles', 'Block size', 'Timestamps', 'Matrix dimension'])  # Writing the header
 
-        for block in block_size:
-            for timestamp in times:
-                print("Block: " + str(block))
-                print("Timestamp" + str(timestamp))
+        for timestamp in times:
+            for block in block_size:
+                print("Block:     " + str(block))
+                print("Timestamp: " + str(timestamp))
 
                 ### recompile binary
-                print("🎬 Re-compiling C implementation...")
-                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE=@(block) -DSKEWING_TIMESTEPS=@(timestamp) -DNDEBUG=YOLOL
+                print("🎬 Re-compiling C implementation...", flush=True)
+                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE_X=@(block) -DSKEWING_BLOCK_SIZE_Y=@(block) -DSKEWING_TIMESTEPS=@(timestamp) -DNDEBUG=YOLOL
                 # run make in C implementation dir and then cd back into the prev dir (infra dir)
-                cd $C_IMPLEMENTATION_DIR/build && make &> /dev/null && cd -
-                print("✅ Finished re-compiling C implementation!\n")
+                cd $C_IMPLEMENTATION_DIR/build
+                compile_command = !( make )
+                has_command_failed_res = has_command_failed(compile_command)
+                cd -
+
+                if has_command_failed_res:
+                    print(f"❗️Skipping invalid size of block={block} timestamp={timestamp} (must be that block > timestamp)\n", flush=True)
+                    continue
+
+                print("✅ Finished re-compiling C implementation!")
 
                 # measuermente (time and perf)
                 n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
                 writer.writerow([n_flops, n_cycles, block, timestamp, matrix_dimension])  # Writing the data
-                writer.flush()
-                print("Data saved to performance_metrics.csv")
+                file.flush() # write appended changes to disk
+                print("Data saved to performance_metrics.csv\n", flush=True)
 
     # gen plots
-    python ./skew_heatmap.py performance
-    python ./skew_heatmap.py runtime
+    python ./skew_heatmap.py @(measurements_file) performance
+    python ./skew_heatmap.py @(measurements_file) runtime
 
 def get_flops_and_cycles_count(implementation: str, matrix_dimension: int):
     temp_dir = $( mktemp -d ).strip()
 
     output_file = f"{temp_dir}/stats.txt"
-    print(f"\n{output_file}")
+    # print(f"{output_file}")
 
     cycles = $( perf stat \
         -x "," \
