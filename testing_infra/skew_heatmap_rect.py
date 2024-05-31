@@ -15,17 +15,25 @@ df = pd.read_csv(measurements_file)
 
 if has_diff_matrix_dims := len(df['Matrix dimension'].unique()) > 1:
     raise Exception("Error: Trying to plot single heatmap for diff matrix sizes (they need to be the same)!")
-
 matrix_dimension = df['Matrix dimension'][0]
+
+# if has_diff_timestamp_dims := len(df['Timestamp'].unique()) > 1:
+#     raise Exception("Error: Trying to plot single heatmap for diff timestamps (they need to be the same)!")
+# timestamp = df['Timestamp'][0]
+timestamp = "max"
 
 df['Performance'] = df['FLOPs'] / df['Cycles']
 df['Runtime'] =  df['Cycles'] / (3.4*10**9)
 
-data_perf = df.pivot_table('Performance', 'Block size', 'Timestamps', fill_value=float("nan"))
-data_runtime = df.pivot_table('Runtime', 'Block size', 'Timestamps', fill_value=float("nan"))
+data_perf = df.pivot_table('Performance', 'Block size X', 'Block size Y', fill_value=float("nan"))
+data_runtime = df.pivot_table('Runtime', 'Block size X', 'Block size Y', fill_value=float("nan"))
+
+print(data_runtime)
 
 # Create the heatmap
-plt.figure(figsize=(25, 15))
+plt.figure(figsize=(25, 15)) # big plot
+# plt.figure(figsize=(8, 5)) # smaller plot
+
 if plot_type.startswith("perf"):
     sns.heatmap(data_perf, annot=True, fmt=".2f", cmap="YlOrRd")
 else:
@@ -33,15 +41,15 @@ else:
     sns.heatmap(data_runtime, annot=True, fmt=".2f", cmap="YlOrRd_r")
 
 if plot_type.startswith("perf"):
-    plt.title(f"Ya moma's performance (flop/cycle) for matrix_dim={matrix_dimension}")
+    plt.title(f"Ya moma's performance (flop/cycle) for matrix_dim={matrix_dimension} & timestamp={timestamp}")
 else:
-    plt.title(f"Ya moma's runtime (sec) for matrix_dim={matrix_dimension}")
+    plt.title(f"Ya moma's runtime (sec) for matrix_dim={matrix_dimension} & timestamp={timestamp}")
 
 base_dir = measurements_file.parent
 if plot_type.startswith("perf"):
-    heatmap_path = base_dir / 'heatmap_perf.png'
+    heatmap_path = base_dir / 'heatmap_rect_perf.png'
 else:
-    heatmap_path = base_dir / 'heatmap_runtime.png'
+    heatmap_path = base_dir / 'heatmap_rect_runtime.png'
 
 plt.savefig(heatmap_path, dpi=300)
 print(f"Plot saved as '{heatmap_path}'")

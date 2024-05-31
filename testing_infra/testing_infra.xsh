@@ -32,6 +32,11 @@ def main():
     if should_only_run_skewed_heatmap := args.run == "heatmap":
         generate_heatmap_plots_for_skewed()
         exit(0)
+    elif should_only_run_skewed_heatmap_rect := args.run.startswith("heatmap_rect"):
+        generate_heatmap_plots_for_rectangle_skewed()
+        exit(0)
+
+
 
     recompile_c_implementation()
     mkdir --parents "$TESTING_DIR"
@@ -115,13 +120,61 @@ def generate_heatmap_plots_for_skewed():
 
                 # measuermente (time and perf)
                 n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
-                writer.writerow([n_flops, n_cycles, block, timestamp, matrix_dimension])  # Writing the data
-                file.flush() # write appended changes to disk
-                print("Data saved to performance_metrics.csv\n", flush=True)
+                writer.writerow([n_flops, n_cycles, block, timestamp, matrix_dimension])
+                file.flush() # write changes to disk
+                print(f"Data saved to '{measurements_file}'\n", flush=True)
 
     # gen plots
     python ./skew_heatmap.py @(measurements_file) performance
     python ./skew_heatmap.py @(measurements_file) runtime
+
+def generate_heatmap_plots_for_rectangle_skewed():
+    matrix_dimension = 1600
+    # block_sizes_x = [ 32, 48, 60, 64, 72, 81, 96]
+    # block_sizes_y = [ 32, 48, 60, 64, 72, 81, 96]
+    block_sizes_x = range(32, 97, 4)
+    block_sizes_y = range(80, 201, 4)
+
+
+    current_time = strftime("%Y-%m-%d_%H:%M:%S")
+    root_dir_for_this_test = f"{$TESTING_DIR}/heatmap/{current_time}"
+    mkdir --parents @(root_dir_for_this_test)
+    measurements_file = f'{root_dir_for_this_test}/performance_metrics_rect.csv'
+
+    with open(measurements_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['FLOPs', 'Cycles', 'Block size X', 'Block size Y','Timestamp', 'Matrix dimension'])  # Writing the header
+
+        for y_dimension in block_sizes_y:
+            for x_dimension in block_sizes_x:
+                timestamp = min(x_dimension-1, y_dimension-1, 49) # biggest still valid timestamp
+
+                print("X Dimension: " + str(x_dimension))
+                print("Y Dimension:" + str(y_dimension))
+
+                ### recompile binary
+                print("🎬 Re-compiling C implementation...", flush=True)
+                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) -DNDEBUG=YOLOL
+                # run make in C implementation dir and then cd back into the prev dir (infra dir)
+                cd $C_IMPLEMENTATION_DIR/build
+                compile_command = !( make )
+                has_command_failed_res = has_command_failed(compile_command)
+                cd -
+
+                if has_command_failed_res:
+                    print(f"❗️Skipping invalid size of block={block} timestamp={timestamp} (must be that block > timestamp)\n", flush=True)
+                    continue
+
+                print("✅ Finished re-compiling C implementation!")
+
+                n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
+                writer.writerow([n_flops, n_cycles, x_dimension, y_dimension, timestamp, matrix_dimension])
+                file.flush() # write changes to disk
+                print(f"Data saved to '{measurements_file}'\n", flush=True)
+
+    # gen plots
+    python ./skew_heatmap_rect.py @(measurements_file) performance
+    python ./skew_heatmap_rect.py @(measurements_file) runtime
 
 def get_flops_and_cycles_count(implementation: str, matrix_dimension: int):
     temp_dir = $( mktemp -d ).strip()
