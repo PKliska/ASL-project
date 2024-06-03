@@ -132,13 +132,20 @@ def generate_heatmap_plots_for_rectangle_skewed():
     matrix_dimension = 1600
     # block_sizes_x = [ 32, 48, 60, 64, 72, 81, 96]
     # block_sizes_y = [ 32, 48, 60, 64, 72, 81, 96]
-    block_sizes_x = range(32, 97, 4)
-    block_sizes_y = range(80, 201, 4)
+
+    # TODO: run over night
+    block_sizes_x = [2] + list(range(4, 38, 4))
+    block_sizes_y = range(32, 201, 4)
+
+    # block_sizes_x = [32]
+    # block_sizes_y = [112]
 
 
     current_time = strftime("%Y-%m-%d_%H:%M:%S")
-    root_dir_for_this_test = f"{$TESTING_DIR}/heatmap/{current_time}"
+    root_dir_for_this_test = f"{$TESTING_DIR}/heatmap/{current_time}".replace(":", "_")
+    root_dir_for_this_binary = f"{root_dir_for_this_test}/binaries"
     mkdir --parents @(root_dir_for_this_test)
+    mkdir --parents @(root_dir_for_this_binary)
     measurements_file = f'{root_dir_for_this_test}/performance_metrics_rect.csv'
 
     with open(measurements_file, mode='w', newline='') as file:
@@ -150,7 +157,8 @@ def generate_heatmap_plots_for_rectangle_skewed():
                 timestamp = min(x_dimension-1, y_dimension-1, 49) # biggest still valid timestamp
 
                 print("X Dimension: " + str(x_dimension))
-                print("Y Dimension:" + str(y_dimension))
+                print("Y Dimension: " + str(y_dimension))
+                print("Timestamp: " + str(timestamp))
 
                 ### recompile binary
                 print("🎬 Re-compiling C implementation...", flush=True)
@@ -159,15 +167,19 @@ def generate_heatmap_plots_for_rectangle_skewed():
                 cd $C_IMPLEMENTATION_DIR/build
                 compile_command = !( make )
                 has_command_failed_res = has_command_failed(compile_command)
+
+                new_binary_path = f"{root_dir_for_this_binary}/cavity_flow_{x_dimension}x_{y_dimension}y_{timestamp}t"
+                mv $C_BINARY @(new_binary_path)
+
                 cd -
 
                 if has_command_failed_res:
-                    print(f"❗️Skipping invalid size of block={block} timestamp={timestamp} (must be that block > timestamp)\n", flush=True)
+                    print(f"❗️Skipping invalid size of block_sizes_x={x_dimension}, y_dimension={y_dimension} timestamp={timestamp} (must be that block > timestamp)\n", flush=True)
                     continue
 
                 print("✅ Finished re-compiling C implementation!")
 
-                n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
+                n_flops, n_cycles = get_flops_and_cycles_count("skewed", new_binary_path, matrix_dimension)
                 writer.writerow([n_flops, n_cycles, x_dimension, y_dimension, timestamp, matrix_dimension])
                 file.flush() # write changes to disk
                 print(f"Data saved to '{measurements_file}'\n", flush=True)
@@ -176,17 +188,17 @@ def generate_heatmap_plots_for_rectangle_skewed():
     python ./skew_heatmap_rect.py @(measurements_file) performance
     python ./skew_heatmap_rect.py @(measurements_file) runtime
 
-def get_flops_and_cycles_count(implementation: str, matrix_dimension: int):
+def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix_dimension: int):
     temp_dir = $( mktemp -d ).strip()
 
     output_file = f"{temp_dir}/stats.txt"
-    # print(f"{output_file}")
+    print(f"USED BINARY: {new_binary_path}", flush=True)
 
     cycles = $( perf stat \
         -x "," \
         --output @(output_file) \
         --event=fp_arith_inst_retired.128b_packed_double,fp_arith_inst_retired.128b_packed_single,fp_arith_inst_retired.256b_packed_double,fp_arith_inst_retired.256b_packed_single,fp_arith_inst_retired.scalar_double,fp_arith_inst_retired.scalar_single \
-        $C_BINARY -I @(implementation) -t --dimension @(matrix_dimension)
+        @(new_binary_path) -I @(implementation) -t --dimension @(matrix_dimension)
     )
 
     n_cycles = float(cycles.strip().split()[-1])
