@@ -31,7 +31,9 @@ data_runtime = df.pivot_table('Runtime', 'Block size X', 'Block size Y', fill_va
 print(data_runtime)
 
 # Create the heatmap
-plt.figure(figsize=(25, 15)) # big plot
+x_size = 15/19 * data_perf.shape[1]
+y_size = 10/17 * data_perf.shape[0]
+plt.figure(figsize=(x_size, y_size)) # big plot
 # plt.figure(figsize=(8, 5)) # smaller plot
 
 if plot_type.startswith("perf"):
