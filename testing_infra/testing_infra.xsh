@@ -17,7 +17,7 @@ def main():
         timing_dir = Path(f"{$TESTING_DIR}/timing/")
         root_dir_for_this_test = sorted(timing_dir.glob("*"))[-1]
 
-        all_implementations = [p.name for p in root_dir_for_this_test.glob("*.csv")]
+        all_implementations = sorted([p.name for p in root_dir_for_this_test.glob("*.csv")])
         all_implementations_comma_sep = ",".join(all_implementations)
 
         # make plots
@@ -119,7 +119,7 @@ def generate_heatmap_plots_for_skewed():
                 print("✅ Finished re-compiling C implementation!")
 
                 # measuermente (time and perf)
-                n_flops, n_cycles = get_flops_and_cycles_count("skewed", matrix_dimension)
+                n_flops, n_cycles = get_flops_and_cycles_count("skewed", $C_BINARY, matrix_dimension)
                 writer.writerow([n_flops, n_cycles, block, timestamp, matrix_dimension])
                 file.flush() # write changes to disk
                 print(f"Data saved to '{measurements_file}'\n", flush=True)
@@ -137,6 +137,7 @@ def generate_heatmap_plots_for_rectangle_skewed():
     block_sizes_x = [2] + list(range(4, 38, 4))
     block_sizes_y = range(32, 201, 4)
 
+    # # most optimal so far
     # block_sizes_x = [32]
     # block_sizes_y = [112]
 
@@ -182,6 +183,7 @@ def generate_heatmap_plots_for_rectangle_skewed():
                 n_flops, n_cycles = get_flops_and_cycles_count("skewed", new_binary_path, matrix_dimension)
                 writer.writerow([n_flops, n_cycles, x_dimension, y_dimension, timestamp, matrix_dimension])
                 file.flush() # write changes to disk
+                print(f"USED BINARY: {new_binary_path}")
                 print(f"Data saved to '{measurements_file}'\n", flush=True)
 
     # gen plots
@@ -192,7 +194,6 @@ def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix
     temp_dir = $( mktemp -d ).strip()
 
     output_file = f"{temp_dir}/stats.txt"
-    print(f"USED BINARY: {new_binary_path}", flush=True)
 
     cycles = $( perf stat \
         -x "," \
@@ -242,7 +243,7 @@ def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
         for matrix_dimension in dimensions_which_to_test:
             print(f"Simulating {implementation} with dimension={matrix_dimension}...", end="", flush=True)
 
-            n_flops, n_cycles = get_flops_and_cycles_count(implementation, matrix_dimension)
+            n_flops, n_cycles = get_flops_and_cycles_count(implementation, $C_BINARY, matrix_dimension)
 
             print(f" took {n_cycles} cycles ({n_cycles/(3.4*10**9)} sec)")
             data.append((matrix_dimension, n_cycles, n_flops))
@@ -257,7 +258,7 @@ def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
             writer.writerow(["matrix_dimension", "n_cycles", "n_flops"])
             writer.writerows(data)
 
-    all_implementations = [f"{i}.csv" for i in implementations]
+    all_implementations = sorted([f"{i}.csv" for i in implementations])
     all_implementations_comma_sep = ",".join(all_implementations)
 
     # make plots
@@ -400,7 +401,10 @@ def get_all_implementations() -> str:
 
 def recompile_c_implementation():
     print("🎬 Re-compiling C implementation...")
-    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DBLOCK_SIZE=$BLOCK_SIZE -DNDEBUG=YOLOL
+    x_dimension = 32
+    y_dimension = 112
+    timestamp = min(x_dimension-1, y_dimension-1, 49) # biggest still valid timestamp
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) -DBLOCK_SIZE=$BLOCK_SIZE -DNDEBUG=YOLOL
     # run make in C implementation dir and then cd back into the prev dir (infra dir)
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
 
