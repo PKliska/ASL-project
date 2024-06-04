@@ -19,8 +19,18 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/skewed_simulation.c
 			   src/utils.c)
 
+add_custom_command(
+	OUTPUT include/generated_simulation.h src/generated_simulation.c
+	COMMAND python ${PROJECT_SOURCE_DIR}/codegen/codegen.py ${PROJECT_BINARY_DIR} 16 10
+	DEPENDS codegen/codegen.py
+)
+
+
+
 target_compile_options(cavity_flow PUBLIC -g -fopt-info -O3 -Wall -Wextra -mavx2 -mfma -ffast-math)
 target_include_directories(cavity_flow PUBLIC include)
+target_include_directories(cavity_flow PRIVATE ${PROJECT_BINARY_DIR}/include)
+target_sources(cavity_flow PRIVATE ${PROJECT_BINARY_DIR}/src/generated_simulation.c)
 target_link_libraries(cavity_flow cargs)
 
 # add new preprocessor options here
