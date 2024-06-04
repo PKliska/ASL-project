@@ -56,4 +56,13 @@ python3 -m pip install -r requirements.txt
 
 
 ```
-
+## Running the code generation
+The code generation script is located in c_implementation/codegen.py.
+Run it with the output directory (should be c_implementation), block_size and time_step size.
+Block size must divide the dimension of the matrix.
+Time step must divide 50.
+Large block sizes lead to code that is too slow to compile and should be avoided.
+CMake should run this automatically but for testing purposes you can run it like this:
+```sh
+python c_implementation/codegen/codegen.py c_implementation/build 16 10
+```
