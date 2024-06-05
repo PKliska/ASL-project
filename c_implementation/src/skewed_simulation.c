@@ -9,11 +9,11 @@
 
 #ifndef SKEWING_BLOCK_SIZE_X
 #warning "SKEWING_BLOCK_SIZE_X was not defined, setting to default (36)"
-#define SKEWING_BLOCK_SIZE_X (36)
+#define SKEWING_BLOCK_SIZE_X (16)
 #endif
 #ifndef SKEWING_BLOCK_SIZE_Y
 #warning "SKEWING_BLOCK_SIZE_Y was not defined, setting to default (36)"
-#define SKEWING_BLOCK_SIZE_Y (36)
+#define SKEWING_BLOCK_SIZE_Y (16)
 #endif
 #ifndef SKEWING_TIMESTEPS
 #warning "SKEWING_TIMESTEPS was not defined, setting to default (10)"
