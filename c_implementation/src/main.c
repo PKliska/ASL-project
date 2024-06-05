@@ -16,6 +16,7 @@
 #include "aligned_avx_simulation.h"
 #include "blocking_simulation.h"
 #include "skewed_simulation.h"
+#include "subskewed_simulation.h"
 #include "generated_simulation.h"
 #include "utils.h"
 
@@ -60,6 +61,9 @@ static const struct implementation IMPLEMENTATIONS[] = {
     },    
     {.name = "skewed",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_skewed_simulation
+    },
+    {.name = "subskewed",
+     .create = (struct simulation * (*)(size_t, double, double, double)) new_subskewed_simulation
     },
     {.name = "generated",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_generated_simulation
