@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "utils.h"
 #include "preallocated_simulation.h"
 #include "faster_math_simulation.h"
 
@@ -60,6 +61,37 @@ void faster_math_build_up_b(const faster_math_simulation* sim,
     }
     }
 }
+void faster_math_build_up_quarter_b(const faster_math_simulation* sim,
+               double dt){
+    double *restrict b = sim->b;
+    const size_t d = sim->d;
+    const double rho = sim->rho;
+    const double multiplier = (d - 1) / (2.0*sim->size);
+    const double rdt = 1.0 / dt;
+    const double sqds = sq(sim->size / (d - 1)) * 0.25; // quarter
+    // ? flops
+    const double *restrict u = sim->u;
+    const double *restrict v = sim->v;
+    for(size_t i=1;i<d - 1;i++){
+    for(size_t j=1;j<d - 1;j++){
+        const double u_left =  u[d*i     + j-1];
+        const double u_right = u[d*i     + j+1];
+        const double u_below = u[d*(i+1) + j  ];
+        const double u_above = u[d*(i-1) + j  ];
+        const double v_left =  v[d*i     + j-1];
+        const double v_right = v[d*i     + j+1];
+        const double v_below = v[d*(i+1) + j  ];
+        const double v_above = v[d*(i-1) + j  ];
+        b[i*d+j] = (rho *
+            (rdt *
+                ((u_right - u_left + v_below - v_above) * multiplier)
+             - (sq(u_right - u_left)
+                + 2*((u_below - u_above)*(v_right - v_left))
+                + sq(v_below - v_above))*sq(multiplier)))*sqds;
+
+    }
+    }
+}
  // ? flops
 
 static void pressure_poisson(faster_math_simulation* sim,
@@ -81,8 +113,8 @@ static void pressure_poisson(faster_math_simulation* sim,
             const double pn_right = pn[d*i     + j+1];
             const double pn_below = pn[d*(i+1) + j  ];
             const double pn_above = pn[d*(i-1) + j  ];
-            p[i*d+j] = (pn_right + pn_left + pn_below + pn_above 
-                        - b[i*d + j]) / 4.0;
+            p[i*d+j] = (pn_right + pn_below + pn_left + pn_above
+                        - b[d*i + j])/4.0;
             }
         }
         for(size_t i=0;i<d;i++) p[d*i     + d-1] = p[d*i + d-2];

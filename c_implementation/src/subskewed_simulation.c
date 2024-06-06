@@ -7,28 +7,28 @@
 #include "utils.h"
 #include "trapeze_macros.h"
 
-#ifndef SKEWING_BLOCK_SIZE_X
-#error "SKEWING_BLOCK_SIZE_X was not defined, setting to default (36)"
+#ifndef SSKEWING_BLOCK_SIZE_X
+#error "SSKEWING_BLOCK_SIZE_X was not defined, setting to default (36)"
 #endif
-#ifndef SKEWING_BLOCK_SIZE_Y
-#error "SKEWING_BLOCK_SIZE_Y was not defined, setting to default (36)"
+#ifndef SSKEWING_BLOCK_SIZE_Y
+#error "SSKEWING_BLOCK_SIZE_Y was not defined, setting to default (36)"
 #endif
-#ifndef SKEWING_TIMESTEPS
-#error "SKEWING_TIMESTEPS was not defined, setting to default (10)"
+#ifndef SSKEWING_TIMESTEPS
+#error "SSKEWING_TIMESTEPS was not defined, setting to default (10)"
 #endif
-#ifndef SUBSKEWING_BLOCK_SIZE_X
-#error "SUBSKEWING_BLOCK_SIZE_X was not defined"
+#ifndef SSKEWING_SUBBLOCK_SIZE_X
+#error "SSKEWING_SUBBLOCK_SIZE_X was not defined"
 #endif
-#ifndef SUBSKEWING_BLOCK_SIZE_Y
-#error "SUBSKEWING_BLOCK_SIZE_Y was not defined"
+#ifndef SSKEWING_SUBBLOCK_SIZE_Y
+#error "SSKEWING_SUBBLOCK_SIZE_Y was not defined"
 #endif
-#if SKEWING_BLOCK_SIZE_X % SUBSKEWING_BLOCK_SIZE_X != 0\
-|| SKEWING_BLOCK_SIZE_Y % SUBSKEWING_BLOCK_SIZE_Y != 0
-#error "SUBSKEWING_BLOCK_SIZE must divide the SKEWING_BLOCK_SIZE"
+#if SSKEWING_BLOCK_SIZE_X % SSKEWING_SUBBLOCK_SIZE_X != 0\
+|| SSKEWING_BLOCK_SIZE_Y % SSKEWING_SUBBLOCK_SIZE_Y != 0
+#error "SSKEWING_SUBBLOCK_SIZE must divide the SSKEWING_BLOCK_SIZE"
 #endif
-#if SUBSKEWING_BLOCK_SIZE_X <= SKEWING_TIMESTEPS \
- || SUBSKEWING_BLOCK_SIZE_Y <= SKEWING_TIMESTEPS
-#error "SUBSKEWING_BLOCK_SIZE must be greater than SKEWING_TIMESTEPS"
+#if SSKEWING_SUBBLOCK_SIZE_X <= SSKEWING_TIMESTEPS \
+ || SSKEWING_SUBBLOCK_SIZE_Y <= SSKEWING_TIMESTEPS
+#error "SSKEWING_SUBBLOCK_SIZE must be greater than SSKEWING_TIMESTEPS"
 #endif
 
 
@@ -50,8 +50,8 @@ subskewed_simulation* new_subskewed_simulation(
 void init_subskewed_simulation(subskewed_simulation* sim,
     size_t dimension, double size, double rho, double nu){
     init_faster_math_simulation(sim, dimension, size, rho, nu);
-    assert(dimension % SUBSKEWING_BLOCK_SIZE_X == 0);
-    assert(dimension % SUBSKEWING_BLOCK_SIZE_Y == 0);
+    assert(dimension % SSKEWING_SUBBLOCK_SIZE_X == 0);
+    assert(dimension % SSKEWING_SUBBLOCK_SIZE_Y == 0);
     sim->base.vtable_ = subskewed_SIMULATION_VTABLE;
 }
 
@@ -122,66 +122,66 @@ static inline void subskewed_layer1(double* b, double* p0, double* p1, size_t d,
                                       int by0, int dy0, int by1, int dy1){
     int x0,y0,x1,y1;
     //top left
-    x0 = bx0*SUBSKEWING_BLOCK_SIZE_X; x1 = (bx0+1)*SUBSKEWING_BLOCK_SIZE_X;
-    y0 = by0*SUBSKEWING_BLOCK_SIZE_Y; y1 = (by0+1)*SUBSKEWING_BLOCK_SIZE_Y;
+    x0 = bx0*SSKEWING_SUBBLOCK_SIZE_X; x1 = (bx0+1)*SSKEWING_SUBBLOCK_SIZE_X;
+    y0 = by0*SSKEWING_SUBBLOCK_SIZE_Y; y1 = (by0+1)*SSKEWING_SUBBLOCK_SIZE_Y;
     subskewed_trapeze(b, p0, p1, d,
                       ts,
                       x0, dx0, x1, -1,
                       y0, dy0, y1, -1);
     //top
     for(int by = by0+1; by < by1-1; by++){
-        int y0 = by*SUBSKEWING_BLOCK_SIZE_Y, y1 = (by+1)*SUBSKEWING_BLOCK_SIZE_Y;
+        int y0 = by*SSKEWING_SUBBLOCK_SIZE_Y, y1 = (by+1)*SSKEWING_SUBBLOCK_SIZE_Y;
         subskewed_trapeze(b, p0, p1, d,
                           ts,
                           x0, dx0, x1, -1,
                           y0, -1, y1, -1);
     }
     //top right
-    y0 = (by1-1)*SUBSKEWING_BLOCK_SIZE_Y, y1 = by1*SUBSKEWING_BLOCK_SIZE_Y;
+    y0 = (by1-1)*SSKEWING_SUBBLOCK_SIZE_Y, y1 = by1*SSKEWING_SUBBLOCK_SIZE_Y;
     subskewed_trapeze(b, p0, p1, d,
                       ts,
                       x0, dx0, x1, -1,
                       y0, -1, y1, dy1);
     for(int bx = bx0+1; bx < bx1-1; bx++){
         //left
-        int x0 = bx*SUBSKEWING_BLOCK_SIZE_X, x1 = (bx+1)*SUBSKEWING_BLOCK_SIZE_X;
-        int y0 = by0*SUBSKEWING_BLOCK_SIZE_Y, y1 = (by0+1)*SUBSKEWING_BLOCK_SIZE_Y;
+        int x0 = bx*SSKEWING_SUBBLOCK_SIZE_X, x1 = (bx+1)*SSKEWING_SUBBLOCK_SIZE_X;
+        int y0 = by0*SSKEWING_SUBBLOCK_SIZE_Y, y1 = (by0+1)*SSKEWING_SUBBLOCK_SIZE_Y;
         subskewed_trapeze(b, p0, p1, d,
                           ts,
                           x0, -1, x1, -1,
                           y0, dy0, y1, -1);
         for(int by = by0+1; by < by1-1; by++){
             //mid
-            int y0 = by*SUBSKEWING_BLOCK_SIZE_Y, y1 = (by+1)*SUBSKEWING_BLOCK_SIZE_Y;
+            int y0 = by*SSKEWING_SUBBLOCK_SIZE_Y, y1 = (by+1)*SSKEWING_SUBBLOCK_SIZE_Y;
             subskewed_trapeze(b, p0, p1, d,
                               ts,
                               x0, -1, x1, -1,
                               y0, -1, y1, -1);
         }
         //right
-        y0 = (by1-1)*SUBSKEWING_BLOCK_SIZE_Y, y1 = by1*SUBSKEWING_BLOCK_SIZE_Y;
+        y0 = (by1-1)*SSKEWING_SUBBLOCK_SIZE_Y, y1 = by1*SSKEWING_SUBBLOCK_SIZE_Y;
         subskewed_trapeze(b, p0, p1, d,
                           ts,
                           x0, -1, x1, -1,
                           y0, -1, y1, dy1);
     }
     //bottom left
-    x0 = (bx1-1)*SUBSKEWING_BLOCK_SIZE_X; x1 = bx1*SUBSKEWING_BLOCK_SIZE_X;
-    y0 = by0*SUBSKEWING_BLOCK_SIZE_Y; y1 = (by0+1)*SUBSKEWING_BLOCK_SIZE_Y;
+    x0 = (bx1-1)*SSKEWING_SUBBLOCK_SIZE_X; x1 = bx1*SSKEWING_SUBBLOCK_SIZE_X;
+    y0 = by0*SSKEWING_SUBBLOCK_SIZE_Y; y1 = (by0+1)*SSKEWING_SUBBLOCK_SIZE_Y;
     subskewed_trapeze(b, p0, p1, d,
                       ts,
                       x0, -1, x1, dx1,
                       y0, dy0, y1, -1);
     for(int by = by0+1; by < by1-1; by++){
         //bottom
-        int y0 = by*SUBSKEWING_BLOCK_SIZE_Y, y1 = (by+1)*SUBSKEWING_BLOCK_SIZE_Y;
+        int y0 = by*SSKEWING_SUBBLOCK_SIZE_Y, y1 = (by+1)*SSKEWING_SUBBLOCK_SIZE_Y;
         subskewed_trapeze(b, p0, p1, d,
                           ts,
                           x0, -1, x1, dx1,
                           y0, -1, y1, -1);
     }
     //bottom right
-    y0 = (by1-1)*SUBSKEWING_BLOCK_SIZE_Y, y1 = by1*SUBSKEWING_BLOCK_SIZE_Y;
+    y0 = (by1-1)*SSKEWING_SUBBLOCK_SIZE_Y, y1 = by1*SSKEWING_SUBBLOCK_SIZE_Y;
     subskewed_trapeze(b, p0, p1, d,
                       ts,
                       x0, -1, x1, dx1,
@@ -190,10 +190,10 @@ static inline void subskewed_layer1(double* b, double* p0, double* p1, size_t d,
 __attribute__((always_inline))
 static inline void subskewed_layer2(double* b, double* p0, double* p1, size_t d,
                                       unsigned ts){
-    const int bbx0 = 0, bbx1 = d/SKEWING_BLOCK_SIZE_X; 
-    const int bby0 = 0, bby1 = d/SKEWING_BLOCK_SIZE_Y; 
-    const int SBPB_X = SKEWING_BLOCK_SIZE_X/SUBSKEWING_BLOCK_SIZE_X;
-    const int SBPB_Y = SKEWING_BLOCK_SIZE_Y/SUBSKEWING_BLOCK_SIZE_Y;
+    const int bbx0 = 0, bbx1 = d/SSKEWING_BLOCK_SIZE_X; 
+    const int bby0 = 0, bby1 = d/SSKEWING_BLOCK_SIZE_Y; 
+    const int SBPB_X = SSKEWING_BLOCK_SIZE_X/SSKEWING_SUBBLOCK_SIZE_X;
+    const int SBPB_Y = SSKEWING_BLOCK_SIZE_Y/SSKEWING_SUBBLOCK_SIZE_Y;
 
     int bx0,by0,bx1,by1;
     //top left
@@ -273,21 +273,21 @@ static void subskewed_pressure_poisson(subskewed_simulation* sim,
     double *restrict b = sim->b;
     double *restrict p0 = sim->p, *restrict p1 = sim->pn;
     
-    const int time_blocks = (pit+SKEWING_TIMESTEPS-1) / SKEWING_TIMESTEPS;
-    const int last_time = (pit-1) % SKEWING_TIMESTEPS + 1;
+    const int time_blocks = (pit+SSKEWING_TIMESTEPS-1) / SSKEWING_TIMESTEPS;
+    const int last_time = (pit-1) % SSKEWING_TIMESTEPS + 1;
     int bt;
     for(bt=0;bt + 1 < time_blocks - 1; bt += 2){
-        subskewed_layer2(b, p0, p1, d, SKEWING_TIMESTEPS);
-        if(SKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
-        subskewed_layer2(b, p0, p1, d, SKEWING_TIMESTEPS);
-        if(SKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
+        subskewed_layer2(b, p0, p1, d, SSKEWING_TIMESTEPS);
+        if(SSKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
+        subskewed_layer2(b, p0, p1, d, SSKEWING_TIMESTEPS);
+        if(SSKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
     }
     if(bt < time_blocks - 1){
-        subskewed_layer2(b, p0, p1, d, SKEWING_TIMESTEPS);
-        if(SKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
+        subskewed_layer2(b, p0, p1, d, SSKEWING_TIMESTEPS);
+        if(SSKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
     }
     subskewed_layer2(b, p0, p1, d, last_time);
-    if(SKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
+    if(SSKEWING_TIMESTEPS % 2 == 1) SWAP(double*, p0, p1);
     
     sim->p = p0; sim->pn = p1;
 

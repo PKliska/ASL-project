@@ -13,6 +13,8 @@ void init_faster_math_simulation(faster_math_simulation* sim,
 
 void faster_math_build_up_b(const faster_math_simulation* sim,
                             double dt);
+void faster_math_build_up_quarter_b(const faster_math_simulation* sim,
+               double dt);
 
 void advance_faster_math_simulation(faster_math_simulation* sim,
                                  unsigned int steps, unsigned int pit,

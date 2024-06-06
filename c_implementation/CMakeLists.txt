@@ -17,6 +17,7 @@ add_executable(cavity_flow src/baseline_simulation.c src/main.c
 			   src/cutoff_trapeze_simulation.c
 			   src/blocking_simulation.c
 			   src/skewed_simulation.c
+			   src/uskewed_simulation.c
 			   src/subskewed_simulation.c
 			   src/utils.c)
 
@@ -45,8 +46,15 @@ set(preprocessor_options
 	SKEWING_BLOCK_SIZE_Y
 	SKEWING_TIMESTEPS
 
-	SUBSKEWING_BLOCK_SIZE_X
-	SUBSKEWING_BLOCK_SIZE_Y
+	SSKEWING_BLOCK_SIZE_X
+	SSKEWING_BLOCK_SIZE_Y
+	SSKEWING_SUBBLOCK_SIZE_X
+	SSKEWING_SUBBLOCK_SIZE_Y
+	SSKEWING_TIMESTEPS
+
+	USKEWING_BLOCK_SIZE_X
+	USKEWING_BLOCK_SIZE_Y
+	USKEWING_TIMESTEPS
 )
 
 foreach(option IN LISTS preprocessor_options)
