@@ -86,9 +86,8 @@ static inline void uskewed_trapeze_mid(double *restrict b, double *restrict p0, 
     int tx0 = x0, tx1 = x1;
     int ty0 = y0, ty1 = y1;
     for(unsigned t=t0;t<(unsigned)t1;t++){
-        for(int tx=tx0;tx<tx1;tx++){
-            assert((ty1 - ty0) % 8 == 0);
-            for(int ty=ty0;ty<ty1;ty+=8){
+        for(int ty=ty0;ty<ty1;ty+=8){
+            for(int tx=tx0;tx<tx1;tx++){
                 double a0 = ucompute_a(old, d, tx, ty+0);
                 double b0 = ucompute_b(old, d, tx, ty+0);
                 double a1 = ucompute_a(old, d, tx, ty+1);
