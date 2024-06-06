@@ -142,7 +142,7 @@ static void pressure_poisson(data_trans_simulation* sim,
             res_l = _mm256_add_pd(pn_trans_vec_left, pn_trans_vec_right);
             _mm256_store_pd(&res[d-4], res_l);
 
-            double* pn_orig = invert_transform_arr(&res, d);
+            double* pn_orig = invert_transform_arr(res, d);
 
             for(size_t j=4;j<d-7;j+=4){
                 
