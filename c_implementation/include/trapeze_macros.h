@@ -1,10 +1,12 @@
 #include "utils.h"
 #include <immintrin.h>
+#include <assert.h>
+
 
 #define TRAPEZE_LOOP_UTD for(int tx=tx0;tx<tx1;tx++)
 #define TRAPEZE_LOOP_DTU for(int tx=tx1-1;tx>=tx0;tx--)
-#define TRAPEZE_LOOP_LTR for(int ty=ty0;ty<ty1;ty++)
-#define TRAPEZE_LOOP_RTL for(int ty=ty0;ty<ty1;ty+=4)//for(int ty=ty1-1;ty>=ty0;ty--)
+#define TRAPEZE_LOOP_LTR for(int ty=ty0;ty<ty1-1;ty+=4)
+#define TRAPEZE_LOOP_RTL for(int ty=ty1-4;ty>=ty0;ty-=4)//for(int ty=ty1-1;ty>=ty0;ty--)
 #define AFTER_LEFT new[tx*d + 0] = new[tx*d + 1]
 #define AFTER_RIGHT new[tx*d + d - 1] = new[tx*d + d - 2]
 #define AFTER_TOP memcpy(new + 0*d+ty0, new + 1*d+ty0, (ty1-ty0)*sizeof(double))
@@ -30,28 +32,29 @@
         old = p0;                                                             \
     }                                                                         \
     int tx0 = x0, tx1 = x1;                                                   \
-    int ty0 = y0, ty1 = y1;                                                     \
+    int ty0 = y0, ty1 = y1; \
+    assert((ty1-ty0)%4==0);                                              \
     __m256d constant_quarter = _mm256_set1_pd(0.25);                            \
     __m256d   old_top, old_bot, old_left, old_right, b_vec, res1, res2;                                        \
     for(unsigned t=t0;t<(unsigned)t1;t++){                                    \
         loop1{                                                                \
             loop2{                                                           \
-                                                                                        \
+                                                                                       \
                 old_top =  _mm256_loadu_pd(&old[(tx+1)*d + ty]);                        \
                 old_bot = _mm256_loadu_pd(&old[(tx-1)*d + ty]);                                         \
-                old_left = _mm256_loadu_pd(&old[(tx)*d + ty+1]);                                \
-                old_right = _mm256_loadu_pd(&old[(tx)*d + ty-1]);                       \
+                old_right = _mm256_loadu_pd(&old[(tx)*d + ty+1]);                                \
+                old_left = _mm256_loadu_pd(&old[(tx)*d + ty-1]);                       \
                 b_vec = _mm256_loadu_pd(&b[tx*d+ty]);                   \
                                                                                     \
                 res1 = _mm256_add_pd(old_top, old_bot);                                     \
-                res2 =  _mm256_add_pd(old_left, old_right);                         \
+                res2 =  _mm256_add_pd(old_right, old_left);                         \
                 res1 =   _mm256_add_pd(res1, res2);                                         \
-                res1 =  _mm256_sub_pd( res1, b_vec);                                    \
+                res1 =  _mm256_sub_pd(res1, b_vec);                                    \
                                                                                         \
                 res1 = _mm256_mul_pd(res1, constant_quarter);                           \
                                                                                             \
                 _mm256_storeu_pd(&new[tx*d + ty], res1);                                 \
-                                                                                        \
+                                                                  \
             }                                                                 \
             after_loop2;                                                      \
         }                                                                     \
