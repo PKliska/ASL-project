@@ -73,40 +73,28 @@ static inline void uskewed_trapeze_mid(double *restrict b, double *restrict p0, 
     int tx0 = x0, tx1 = x1;
     int ty0 = y0, ty1 = y1;
     for(unsigned t=t0;t<(unsigned)t1;t++){
-        for(int ty=ty0;ty<ty1;ty+=8){
-            for(int tx=tx0;tx<tx1;tx++){
-                double a0 = UCOMPUTE_A(old, d, tx, ty+0);
-                double b0 = UCOMPUTE_B(old, d, tx, ty+0);
-                double a1 = UCOMPUTE_A(old, d, tx, ty+1);
-                double b1 = UCOMPUTE_B(old, d, tx, ty+1);
-                double a2 = UCOMPUTE_A(old, d, tx, ty+2);
-                double b2 = UCOMPUTE_B(old, d, tx, ty+2);
-                double a3 = UCOMPUTE_A(old, d, tx, ty+3);
-                double b3 = UCOMPUTE_B(old, d, tx, ty+3);
-                double a4 = UCOMPUTE_A(old, d, tx, ty+4);
-                double b4 = UCOMPUTE_B(old, d, tx, ty+4);
-                double a5 = UCOMPUTE_A(old, d, tx, ty+5);
-                double b5 = UCOMPUTE_B(old, d, tx, ty+5);
-                double a6 = UCOMPUTE_A(old, d, tx, ty+6);
-                double b6 = UCOMPUTE_B(old, d, tx, ty+6);
-                double a7 = UCOMPUTE_A(old, d, tx, ty+7);
-                double b7 = UCOMPUTE_B(old, d, tx, ty+7);
+        for(int tx=tx0;tx<tx1;tx+=8){
+        for(int ty=ty0;ty<ty1;ty+=4){
+		#pragma clang loop unroll(full)
+		for(int i=0;i<8;i++){
+		__builtin_prefetch((tx+i)*d + ty, 1);
+                double a0 = UCOMPUTE_A(old, d, tx+i, ty+0);
+                double b0 = UCOMPUTE_B(old, d, tx+i, ty+0);
+                double a1 = UCOMPUTE_A(old, d, tx+i, ty+1);
+                double b1 = UCOMPUTE_B(old, d, tx+i, ty+1);
+                double a2 = UCOMPUTE_A(old, d, tx+i, ty+2);
+                double b2 = UCOMPUTE_B(old, d, tx+i, ty+2);
+                double a3 = UCOMPUTE_A(old, d, tx+i, ty+3);
+                double b3 = UCOMPUTE_B(old, d, tx+i, ty+3);
                 double c0 = UCOMPUTE_C(a0, b0);
                 double c1 = UCOMPUTE_C(a1, b1);
                 double c2 = UCOMPUTE_C(a2, b2);
                 double c3 = UCOMPUTE_C(a3, b3);
-                double c4 = UCOMPUTE_C(a4, b4);
-                double c5 = UCOMPUTE_C(a5, b5);
-                double c6 = UCOMPUTE_C(a6, b6);
-                double c7 = UCOMPUTE_C(a7, b7);
-                new[tx*d + ty+0] = UCOMPUTE_D(c0, b, d, tx, ty+0);
-                new[tx*d + ty+1] = UCOMPUTE_D(c1, b, d, tx, ty+1);
-                new[tx*d + ty+2] = UCOMPUTE_D(c2, b, d, tx, ty+2);
-                new[tx*d + ty+3] = UCOMPUTE_D(c3, b, d, tx, ty+3);
-                new[tx*d + ty+4] = UCOMPUTE_D(c4, b, d, tx, ty+4);
-                new[tx*d + ty+5] = UCOMPUTE_D(c5, b, d, tx, ty+5);
-                new[tx*d + ty+6] = UCOMPUTE_D(c6, b, d, tx, ty+6);
-                new[tx*d + ty+7] = UCOMPUTE_D(c7, b, d, tx, ty+7);
+                new[(tx+i)*d + ty+0] = UCOMPUTE_D(c0, b, d, tx+i, ty+0);
+                new[(tx+i)*d + ty+1] = UCOMPUTE_D(c1, b, d, tx+i, ty+1);
+                new[(tx+i)*d + ty+2] = UCOMPUTE_D(c2, b, d, tx+i, ty+2);
+                new[(tx+i)*d + ty+3] = UCOMPUTE_D(c3, b, d, tx+i, ty+3);
+		}
             }
         }
         tx0--; tx1--; ty0--; ty1--;
