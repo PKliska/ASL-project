@@ -88,6 +88,7 @@ struct arguments
     const char *impl_name; // @Pavel I moved this here, somehow only like so it wokrs
     unsigned int dimension;
     double size;
+    bool should_write_matrices;
 };
 
 static struct cag_option options[] = {
@@ -139,6 +140,7 @@ static void parse_args(struct arguments *args, int argc, char *argv[])
         {
         case 'o':
             args->output_file = cag_option_get_value(&context);
+            args->should_write_matrices = true;
             break;
         case 'n':
             // todo: check that arg is really an unsigned int
@@ -196,14 +198,14 @@ static void parse_args(struct arguments *args, int argc, char *argv[])
             // sscanf(size_str, "%lf", &args->size);
             break;
         case 'd':
-            const char *dimension_str = cag_option_get_value(&context);
+            {const char *dimension_str = cag_option_get_value(&context);
             if (!dimension_str)
             {
                 fputs("error: option d requires a size", stderr);
                 exit(-1);
             }
             sscanf(dimension_str, "%u", &args->dimension);
-            break;
+            break;}
         case 'l':
             for (size_t i = 0; i < sizeof(IMPLEMENTATIONS) / sizeof(IMPLEMENTATIONS[0]); i++)
             {
@@ -278,7 +280,9 @@ int main(int argc, char *argv[])
         .implementation = IMPLEMENTATIONS[0],
         .should_time = false,
         .dimension = 41,
-        .size = 2.0};
+        .size = 2.0,
+        .should_write_matrices = false,
+    };
 
     parse_args(&arguments, argc, argv);
     DPRINTF("Commandline options are:\n"
@@ -307,9 +311,10 @@ int main(int argc, char *argv[])
         double cycles = rdtsc(sim, arguments.num_iter, pit, dt);
         printf("Runtime of simulation (in cycles): %f\n", cycles);
     }
-    else
+    else if (arguments.should_write_matrices)
     {
         advance_simulation(sim, arguments.num_iter, pit, dt);
+
         FILE *output_file = fopen(arguments.output_file, "w");
         if (!output_file)
         {
@@ -317,6 +322,12 @@ int main(int argc, char *argv[])
             return -1;
         }
         write_simulation(sim, output_file);
+    } else {
+        // execute 4 times like in the "timed" version, but don't write matrices to file
+        advance_simulation(sim, arguments.num_iter, pit, dt);
+        advance_simulation(sim, arguments.num_iter, pit, dt);
+        advance_simulation(sim, arguments.num_iter, pit, dt);
+        advance_simulation(sim, arguments.num_iter, pit, dt);
     }
 
     destroy_simulation(sim);
