@@ -43,9 +43,9 @@ else:
     sns.heatmap(data_runtime, annot=True, fmt=".2f", cmap="YlOrRd_r")
 
 if plot_type.startswith("perf"):
-    plt.title(f"Ya moma's performance (flop/cycle) for matrix_dim={matrix_dimension} & timestamp={timestamp}")
+    plt.title(f"Performance (flop/cycle) for matrix_dim={matrix_dimension}")
 else:
-    plt.title(f"Ya moma's runtime (sec) for matrix_dim={matrix_dimension} & timestamp={timestamp}")
+    plt.title(f"Runtime (sec) for matrix_dim={matrix_dimension}")
 
 base_dir = measurements_file.parent
 if plot_type.startswith("perf"):

@@ -29,7 +29,7 @@ def plot_csv_files(csv_files, labels):
         # sns.lineplot(data=df, x="matrix_dimension", y="n_cycles", label=label, color=color)
 
     plt.xlabel("Dimension")
-    plt.ylabel("Performance")
+    plt.ylabel("Performance in Flops/cycle")
     plt.legend()
     plt.grid(axis='y', alpha=0.7)
 
