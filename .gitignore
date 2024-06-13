@@ -11,3 +11,4 @@ c_implementation/bin/
 testing_infra/heatmap_perf.png
 testing_infra/heatmap_runtime.png
 testing_infra/performance_metrics*.csv
+poly/
