@@ -404,7 +404,33 @@ def recompile_c_implementation():
     x_dimension = 32
     y_dimension = 112
     timestamp = min(x_dimension-1, y_dimension-1, 49) # biggest still valid timestamp
-    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) -DBLOCK_SIZE=$BLOCK_SIZE -DNDEBUG=YOLOL
+    should_auto_vectorize = True
+
+    source-bash /home/myboi/intel/oneapi/setvars.sh
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  \
+        -DUSKEWING_BLOCK_SIZE_X=16 -DUSKEWING_BLOCK_SIZE_Y=56 -DUSKEWING_TIMESTEPS=15 \
+        -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
+        -DSSKEWING_TIMESTEPS=@(timestamp) -DSSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
+        -DSSKEWING_SUBBLOCK_SIZE_X=@(x_dimension) -DSSKEWING_SUBBLOCK_SIZE_Y=@(y_dimension) \
+        -DBLOCK_SIZE=$BLOCK_SIZE \
+        -DNDEBUG=YOLOL \
+        -DNO_AUTO_VEC=@("DISABLE_AUTO_VEC" if not should_auto_vectorize else "FILIP_WAZ_HARE")
+
+
+    # x_dimension = 64
+    # y_dimension = 64
+    # sub_skew_dim = 32
+    # timestamp = min(x_dimension-1, y_dimension-1, 49, sub_skew_dim-1) # biggest still valid timestamp
+
+    # cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  \
+    #     -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
+    #     -DSUBSKEWING_BLOCK_SIZE_X=32 -DSUBSKEWING_BLOCK_SIZE_Y=32 \
+    #     -DBLOCK_SIZE=$BLOCK_SIZE \
+    #     -DNDEBUG=YOLOL
+        # -DNO_AUTO_VEC=FILIP_WAZ_HARE
+
+
+
     # run make in C implementation dir and then cd back into the prev dir (infra dir)
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
 

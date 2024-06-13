@@ -52,8 +52,6 @@ set(preprocessor_options
 	USKEWING_TIMESTEPS
 )
 
-
-
 add_custom_command(
 	OUTPUT include/generated_simulation.h src/generated_simulation.c
 	COMMAND python ${PROJECT_SOURCE_DIR}/codegen/codegen.py ${PROJECT_BINARY_DIR} 4 2
@@ -62,7 +60,7 @@ add_custom_command(
 target_include_directories(cavity_flow PRIVATE ${PROJECT_BINARY_DIR}/include)
 target_sources(cavity_flow PRIVATE ${PROJECT_BINARY_DIR}/src/generated_simulation.c)
 
-if(DEFINED NO_AUTO_VEC)
+if(NO_AUTO_VEC STREQUAL "DISABLE_AUTO_VEC")
 	# disable auto vec with "-fno-tree-vectorize" & no "-mno-avx"
 	target_compile_options(cavity_flow PUBLIC -g -fopt-info -O3 -fno-tree-vectorize -mno-avx -Wall -Wextra -mfma -ffast-math)
 	message(STATUS "AUTO VEC DISABLED ❌")
@@ -89,7 +87,7 @@ set_target_properties(cavity_flow
 		      PROPERTIES
 		      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# clear (chached) variables, otherwise once we define a var, it can never be forgotten via CLI options which messes with the auto-vec check
+# clear (chached) variables, otherwise once we define a var, it can never be forgotten via CLI options
 foreach(option IN LISTS preprocessor_options)
 	unset(${option} CACHE)
 	unset(${option})
