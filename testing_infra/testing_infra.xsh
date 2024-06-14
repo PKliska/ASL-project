@@ -107,7 +107,16 @@ def generate_heatmap_plots_for_skewed():
 
                 ### recompile binary
                 print("🎬 Re-compiling C implementation...", flush=True)
-                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_BLOCK_SIZE_X=@(block) -DSKEWING_BLOCK_SIZE_Y=@(block) -DSKEWING_TIMESTEPS=@(timestamp) -DNDEBUG=YOLOL
+
+                run_cmake(
+                    compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
+                    skew_block_x=block,  skew_block_y=block,  skew_timesteps=timestamp,
+                    # placeholders below cuz they we are only testing skewed
+                    sskew_block_x=64, sskew_block_y=64, sskew_timesteps=32, sskew_sub_block_x=32, sskew_sub_block_y=32,
+                    uskew_block_x=16, uskew_block_y=56, uskew_timesteps=15,
+                    block_size=69,
+                )
+
                 # run make in C implementation dir and then cd back into the prev dir (infra dir)
                 cd $C_IMPLEMENTATION_DIR/build
                 compile_command = !( make )
@@ -165,20 +174,32 @@ def generate_heatmap_plots_for_rectangle_skewed():
 
                 ### recompile binary
                 print("🎬 Re-compiling C implementation...", flush=True)
-                cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/ -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) -DNDEBUG=YOLOL
+                run_cmake(
+                    compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
+                    skew_block_x=x_dimension,  skew_block_y=y_dimension,  skew_timesteps=timestamp,
+                    # placeholders below cuz they we are only testing skewed
+                    sskew_block_x=64, sskew_block_y=64, sskew_timesteps=32, sskew_sub_block_x=32, sskew_sub_block_y=32,
+                    uskew_block_x=16, uskew_block_y=56, uskew_timesteps=15,
+                    block_size=69,
+                )
+
                 # run make in C implementation dir and then cd back into the prev dir (infra dir)
                 cd $C_IMPLEMENTATION_DIR/build
                 compile_command = !( make )
                 has_command_failed_res = has_command_failed(compile_command)
 
-                new_binary_path = f"{root_dir_for_this_binary}/cavity_flow_{x_dimension}x_{y_dimension}y_{timestamp}t"
-                mv $C_BINARY @(new_binary_path)
-
-                cd -
-
                 if has_command_failed_res:
+                    cd -
+                    print()
+                    print(compile_command.output.removesuffix(""))
+                    print(compile_command.errors.removesuffix(""))
+                    print()
                     print(f"❗️Skipping invalid size of block_sizes_x={x_dimension}, y_dimension={y_dimension} timestamp={timestamp} (must be that block > timestamp)\n", flush=True)
                     continue
+                else:
+                    new_binary_path = f"{root_dir_for_this_binary}/cavity_flow_{x_dimension}x_{y_dimension}y_{timestamp}t"
+                    mv $C_BINARY @(new_binary_path)
+                    cd -
 
                 print("✅ Finished re-compiling C implementation!")
 
@@ -193,6 +214,7 @@ def generate_heatmap_plots_for_rectangle_skewed():
     python ./skew_heatmap_rect.py @(measurements_file) runtime
 
 def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix_dimension: int):
+    print(f"Running implementation '{implementation}' and measuring FLOPS + cycles...")
     temp_dir = $( mktemp -d ).strip()
 
     output_file = f"{temp_dir}/stats.txt"
@@ -229,11 +251,6 @@ def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix
 
     # print(total_flops)
     return (total_flops, n_cycles)
-
-
-
-
-
 
 def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
     print("\n🟠 Starting timing test...")
@@ -396,6 +413,10 @@ def set_global_variables(args):
     # for bash commands, print out how they were invoked (with which concrete args)
     # $XONSH_TRACE_SUBPROC = True
 
+    # source some vars for the Intel C Compiler, if we source twiece then we get an error, so do it here
+    source-bash /home/myboi/intel/oneapi/setvars.sh
+
+
 def disable_turbo_boost():
     if is_turbo_boost_enabled := $( cat /sys/devices/system/cpu/intel_pstate/no_turbo ) == "0\n":
         print("✋🛑 Turbo boost is not disabled! Disable turbo boost by running the below commands!\n")
@@ -414,27 +435,18 @@ def get_all_implementations() -> str:
 
 def recompile_c_implementation():
     print("🎬 Re-compiling C implementation...")
-    x_dimension = 32
-    y_dimension = 112
-    timestamp = min(x_dimension-1, y_dimension-1, 49) # biggest still valid timestamp
+    skew_block_x = 32
+    skew_block_y = 112
+    timestamp = min(skew_block_x-1, skew_block_y-1, 49) # biggest still valid timestamp
     # should_auto_vectorize = True
 
-    source-bash /home/myboi/intel/oneapi/setvars.sh
-    compiler = $COMPILER
-    $CMAKE_C_COMPILER = compiler
-    $CMAKE_CXX_COMPILER = compiler
-
-    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  \
-        -D CMAKE_C_COMPILER=$CMAKE_C_COMPILER \
-        -D CMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER \
-        -DUSKEWING_BLOCK_SIZE_X=16 -DUSKEWING_BLOCK_SIZE_Y=56 -DUSKEWING_TIMESTEPS=15 \
-        -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
-        -DSSKEWING_TIMESTEPS=@(timestamp) -DSSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
-        -DSSKEWING_SUBBLOCK_SIZE_X=@(x_dimension) -DSSKEWING_SUBBLOCK_SIZE_Y=@(y_dimension) \
-        -DBLOCK_SIZE=$BLOCK_SIZE \
-        -DNDEBUG=YOLOL \
-        -DNO_AUTO_VEC=@("DISABLE_AUTO_VEC" if $DISABLE_AUTO_VEC else "FILIP_WAZ_HARE")
-
+    run_cmake(
+        compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
+        skew_block_x=skew_block_x,  skew_block_y=skew_block_y,  skew_timesteps=timestamp,
+        sskew_block_x=skew_block_x, sskew_block_y=skew_block_y, sskew_timesteps=timestamp, sskew_sub_block_x=skew_block_x, sskew_sub_block_y=skew_block_y,
+        uskew_block_x=16, uskew_block_y=56, uskew_timesteps=15,
+        block_size=$BLOCK_SIZE,
+    )
 
     # x_dimension = 64
     # y_dimension = 64
@@ -454,6 +466,27 @@ def recompile_c_implementation():
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
 
     print("✅ Finished re-compiling C implementation!\n")
+
+def run_cmake(*,
+    compiler, should_disable_auto_vectorization,
+    skew_block_x,  skew_block_y,  skew_timesteps,
+    sskew_block_x, sskew_block_y, sskew_timesteps, sskew_sub_block_x, sskew_sub_block_y,
+    uskew_block_x, uskew_block_y, uskew_timesteps,
+    block_size,
+):
+    $CMAKE_C_COMPILER = compiler
+    $CMAKE_CXX_COMPILER = compiler
+
+    cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  \
+        -D CMAKE_C_COMPILER=$CMAKE_C_COMPILER \
+        -D CMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER \
+        -D SKEWING_TIMESTEPS=@(skew_timesteps) -D SKEWING_BLOCK_SIZE_X=@(skew_block_x) -D SKEWING_BLOCK_SIZE_Y=@(skew_block_y) \
+        -D SSKEWING_TIMESTEPS=@(sskew_timesteps) -D SSKEWING_BLOCK_SIZE_X=@(sskew_block_x) -D SSKEWING_BLOCK_SIZE_Y=@(sskew_block_y) \
+        -D SSKEWING_SUBBLOCK_SIZE_X=@(sskew_sub_block_x) -D SSKEWING_SUBBLOCK_SIZE_Y=@(sskew_sub_block_y) \
+        -D USKEWING_BLOCK_SIZE_X=@(uskew_block_x) -D USKEWING_BLOCK_SIZE_Y=@(uskew_block_y) -D USKEWING_TIMESTEPS=@(uskew_timesteps) \
+        -D BLOCK_SIZE=@(block_size) \
+        -D NDEBUG=YOLOL \
+        -D NO_AUTO_VEC=@("DISABLE_AUTO_VEC" if should_disable_auto_vectorization else "FILIP_WAZ_HARE")
 
 def read_matrices_from_csv(csv_path: str) -> tuple[Any, Any, Any]:
     with open(csv_path, 'r') as csv_file:
