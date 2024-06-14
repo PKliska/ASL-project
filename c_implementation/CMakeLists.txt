@@ -1,12 +1,5 @@
 cmake_minimum_required(VERSION 3.9.2)
 
-# set(CMAKE_C_COMPILER "/home/myboi/asl/filip/poly/build/bin/clang")
-# set(CMAKE_CXX_COMPILER "/home/myboi/asl/filip/poly/build/bin/clang")
-# set(CMAKE_C_COMPILER "icx")
-# set(CMAKE_CXX_COMPILER "icx")
-set(CMAKE_C_COMPILER "gcc-12")
-set(CMAKE_CXX_COMPILER "gcc-12")
-
 project(cavity_flow C)
 
 add_subdirectory(external/cargs)
@@ -90,5 +83,5 @@ set_target_properties(cavity_flow
 # clear (chached) variables, otherwise once we define a var, it can never be forgotten via CLI options
 foreach(option IN LISTS preprocessor_options)
 	unset(${option} CACHE)
-	unset(${option})
+	# unset(${option})
 endforeach()

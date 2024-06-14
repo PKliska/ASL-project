@@ -75,6 +75,8 @@ def parse_cli_args():
     argparser.add_argument("--implementation", nargs='+', default=[], help="Chose which implementation to run, can also be given multiple implementations")
     argparser.add_argument("--matrix-dimensions", nargs='+', default=[], help="For which matrix dimensions to run the tests")
     argparser.add_argument("--block-size", default=8, type=int, help="Block size for blocking implementation")
+    argparser.add_argument("--compiler", default="gcc", help="Choose between 'gcc', 'icc' and 'clang'")
+    argparser.add_argument("--disable-auto-vec", action='store_true', help="Use this flag to disable auto vectorization")
 
     args = argparser.parse_args()
     return args
@@ -373,6 +375,17 @@ def set_global_variables(args):
     $C_IMPLEMENTATION_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/../c_implementation").resolve(strict=True)
     $C_BINARY = Path(f"{$C_IMPLEMENTATION_DIR}/build/bin/cavity_flow")
 
+    if args.compiler == "gcc":
+        $COMPILER = "gcc-12"
+    elif args.compiler == "icc":
+        $COMPILER = "icx"
+    elif args.compiler == "clang":
+        $COMPILER = "/home/myboi/asl/poly/build/bin/clang"
+    else:
+        raise Error("Invalid chompiler chose, please abort ur life, tnx")
+
+    $DISABLE_AUTO_VEC = args.disable_auto_vec
+
     $TESTING_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/.test_results").resolve(strict=True)
     $BLOCK_SIZE = args.block_size
 
@@ -404,17 +417,23 @@ def recompile_c_implementation():
     x_dimension = 32
     y_dimension = 112
     timestamp = min(x_dimension-1, y_dimension-1, 49) # biggest still valid timestamp
-    should_auto_vectorize = True
+    # should_auto_vectorize = True
 
     source-bash /home/myboi/intel/oneapi/setvars.sh
+    compiler = $COMPILER
+    $CMAKE_C_COMPILER = compiler
+    $CMAKE_CXX_COMPILER = compiler
+
     cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  \
+        -D CMAKE_C_COMPILER=$CMAKE_C_COMPILER \
+        -D CMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER \
         -DUSKEWING_BLOCK_SIZE_X=16 -DUSKEWING_BLOCK_SIZE_Y=56 -DUSKEWING_TIMESTEPS=15 \
         -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
         -DSSKEWING_TIMESTEPS=@(timestamp) -DSSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
         -DSSKEWING_SUBBLOCK_SIZE_X=@(x_dimension) -DSSKEWING_SUBBLOCK_SIZE_Y=@(y_dimension) \
         -DBLOCK_SIZE=$BLOCK_SIZE \
         -DNDEBUG=YOLOL \
-        -DNO_AUTO_VEC=@("DISABLE_AUTO_VEC" if not should_auto_vectorize else "FILIP_WAZ_HARE")
+        -DNO_AUTO_VEC=@("DISABLE_AUTO_VEC" if $DISABLE_AUTO_VEC else "FILIP_WAZ_HARE")
 
 
     # x_dimension = 64
