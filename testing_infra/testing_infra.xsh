@@ -154,12 +154,15 @@ def generate_heatmap_plots_for_skewed():
     python ./skew_heatmap.py @(measurements_file) runtime
 
 def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: int):
-    # matrix_dimension = 1600
-    # block_sizes_x = [ 32, 48, 60, 64, 72, 81, 96]
-    # block_sizes_y = [ 32, 48, 60, 64, 72, 81, 96]
 
-    block_sizes_x = list(range(16, 65, 16))
-    block_sizes_y = list(range(16, 65, 16))
+    # constraints for skewed: no constraints for x, y
+    # constraints for uskewed: x divisible by 8 AND y divisible by 4
+
+    block_sizes_x = [12,20,24,32,40]
+    block_sizes_y = [16,24,32,40, 52,80,100,140]
+
+    # block_sizes_x = list(range(16, 65, 16))
+    # block_sizes_y = list(range(16, 65, 16))
 
     # # most optimal so far
     # block_sizes_x = [32]
@@ -213,7 +216,7 @@ def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: in
                 has_command_failed_res = has_command_failed(compile_command)
 
                 if has_command_failed_res:
-                    cd -
+                    cd $TESTING_INFRA_ROOT_DIR
                     print()
                     print(compile_command.output.removesuffix(""))
                     print(compile_command.errors.removesuffix(""))
@@ -223,7 +226,7 @@ def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: in
                 else:
                     new_binary_path = f"{root_dir_for_this_binary}/cavity_flow_{x_dimension}x_{y_dimension}y_{timestamp}t"
                     mv $C_BINARY @(new_binary_path)
-                    cd -
+                    cd $TESTING_INFRA_ROOT_DIR
 
                 print("✅ Finished re-compiling C implementation!")
 
@@ -239,7 +242,7 @@ def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: in
 
 def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix_dimension: int):
     print(f"Running implementation '{implementation}' and measuring FLOPS + cycles...")
-    temp_dir = $( mktemp -d ).strip()
+    temp_dir = $( mktemp -d -t @(f"asl_{implementation}_{matrix_dimension}_XXXXXXXX") ).strip()
 
     output_file = f"{temp_dir}/stats.txt"
 
@@ -463,32 +466,24 @@ def get_all_implementations() -> str:
 
 def recompile_c_implementation():
     print("🎬 Re-compiling C implementation...")
-    skew_block_x = 32
-    skew_block_y = 112
-    timestamp = min(skew_block_x-1, skew_block_y-1, 49) # biggest still valid timestamp
-    # should_auto_vectorize = True
+    # currently most optimal uskew params
+    uskew_x = 16
+    uskew_y = 48
+    uskew_t = min(uskew_x-1, uskew_y-1, 49) # biggest still valid timestamp
+
+    # currently most optimal uskew params
+    skew_x = 20
+    skew_y = 32
+    skew_t = min(skew_x-1, skew_y-1, 49) # biggest still valid timestamp
 
     run_cmake(
         compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
-        skew_block_x=skew_block_x,  skew_block_y=skew_block_y,  skew_timesteps=timestamp,
-        sskew_block_x=skew_block_x, sskew_block_y=skew_block_y, sskew_timesteps=timestamp, sskew_sub_block_x=skew_block_x, sskew_sub_block_y=skew_block_y,
-        uskew_block_x=16, uskew_block_y=56, uskew_timesteps=15,
+        skew_block_x=skew_x,  skew_block_y=skew_y,  skew_timesteps=skew_t,
+        uskew_block_x=uskew_x, uskew_block_y=uskew_y, uskew_timesteps=uskew_t,
+        # placeholders below cuz we don't know optimal ones yet
+        sskew_block_x=64, sskew_block_y=64, sskew_sub_block_x=32, sskew_sub_block_y=32, sskew_timesteps=1,
         block_size=$BLOCK_SIZE,
     )
-
-    # x_dimension = 64
-    # y_dimension = 64
-    # sub_skew_dim = 32
-    # timestamp = min(x_dimension-1, y_dimension-1, 49, sub_skew_dim-1) # biggest still valid timestamp
-
-    # cmake -S $C_IMPLEMENTATION_DIR/ -B $C_IMPLEMENTATION_DIR/build/  \
-    #     -DSKEWING_TIMESTEPS=@(timestamp) -DSKEWING_BLOCK_SIZE_X=@(x_dimension) -DSKEWING_BLOCK_SIZE_Y=@(y_dimension) \
-    #     -DSUBSKEWING_BLOCK_SIZE_X=32 -DSUBSKEWING_BLOCK_SIZE_Y=32 \
-    #     -DBLOCK_SIZE=$BLOCK_SIZE \
-    #     -DNDEBUG=YOLOL
-        # -DNO_AUTO_VEC=FILIP_WAZ_HARE
-
-
 
     # run make in C implementation dir and then cd back into the prev dir (infra dir)
     cd $C_IMPLEMENTATION_DIR/build && make && cd -
