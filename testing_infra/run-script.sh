@@ -13,7 +13,7 @@ if [ -z "$1" ]; then # first arg is not set
     exit 1
 fi
 
-pueue clean
+# pueue clean
 
 printf "❗️ Already running tasks:\n"
 pueue status status=running
