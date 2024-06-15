@@ -29,16 +29,13 @@ def main():
 
         exit(0)
 
-    if should_only_run_skewed_heatmap := args.run == "heatmap":
-        generate_heatmap_plots_for_skewed()
-        exit(0)
-    elif should_only_run_skewed_heatmap_rect := args.run.startswith("heatmap_rect"):
-        generate_heatmap_plots_for_rectangle_skewed()
-        exit(0)
+    # When changing the compiler, the first build always fails for some reason cuz of missing #DEFINE vars, but
+    # subsequent ones succeed, probs has to do with CMake variable caching...
+    try:
+        recompile_c_implementation()
+    except Exception as e:
+        recompile_c_implementation()
 
-
-
-    recompile_c_implementation()
     mkdir --parents "$TESTING_DIR"
 
     if has_user_defined_implementations := len(args.implementation) > 0:
@@ -50,6 +47,22 @@ def main():
         test_cases = [int(t) for t in args.matrix_dimensions]
     else:
         test_cases = [32, 64, 128, 640, 960, 1280]
+
+    if should_only_run_skewed_heatmap := args.run == "heatmap":
+        generate_heatmap_plots_for_skewed()
+        exit(0)
+    elif should_only_run_heatmap_general := args.run.startswith("heatmap_general"):
+        if more_than_one_matrix_dim := len(test_cases) > 1:
+            raise Error("Heatmap only accepts 1 matrix_dim, not multiple!")
+        matrix_dim = test_cases[0]
+
+        if more_than_one_implementation := len(test_cases) > 1:
+            raise Error("Heatmap only accepts 1 implementation, not multiple!")
+        implementation = implementations[0]
+
+        generate_heatmap_plots_for_general(implementation, matrix_dim)
+        exit(0)
+
 
     # based on arguments run timing plot, consystency, correctness, etc.
     if args.run == "timing":
@@ -77,6 +90,7 @@ def parse_cli_args():
     argparser.add_argument("--block-size", default=8, type=int, help="Block size for blocking implementation")
     argparser.add_argument("--compiler", default="gcc", help="Choose between 'gcc', 'icc' and 'clang'")
     argparser.add_argument("--disable-auto-vec", action='store_true', help="Use this flag to disable auto vectorization")
+    argparser.add_argument("--num-iter", default=100, help="Number of simulation steps")
 
     args = argparser.parse_args()
     return args
@@ -139,26 +153,25 @@ def generate_heatmap_plots_for_skewed():
     python ./skew_heatmap.py @(measurements_file) performance
     python ./skew_heatmap.py @(measurements_file) runtime
 
-def generate_heatmap_plots_for_rectangle_skewed():
-    matrix_dimension = 1600
+def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: int):
+    # matrix_dimension = 1600
     # block_sizes_x = [ 32, 48, 60, 64, 72, 81, 96]
     # block_sizes_y = [ 32, 48, 60, 64, 72, 81, 96]
 
-    # TODO: run over night
-    block_sizes_x = [2] + list(range(4, 38, 4))
-    block_sizes_y = range(32, 201, 4)
+    block_sizes_x = list(range(8, 64, 8))
+    block_sizes_y = [20,24,28]
+
 
     # # most optimal so far
     # block_sizes_x = [32]
     # block_sizes_y = [112]
 
-
     current_time = strftime("%Y-%m-%d_%H:%M:%S")
-    root_dir_for_this_test = f"{$TESTING_DIR}/heatmap/{current_time}".replace(":", "_")
+    root_dir_for_this_test = f"""{$TESTING_DIR}/heatmap/{current_time} - {implementation}_{$COMPILER_HUMAN_NAME}{"_noautovec" if $DISABLE_AUTO_VEC else ""}""".replace(":", "_")
     root_dir_for_this_binary = f"{root_dir_for_this_test}/binaries"
     mkdir --parents @(root_dir_for_this_test)
     mkdir --parents @(root_dir_for_this_binary)
-    measurements_file = f'{root_dir_for_this_test}/performance_metrics_rect.csv'
+    measurements_file = f'{root_dir_for_this_test}/performance_metrics_{implementation}.csv'
 
     with open(measurements_file, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -174,14 +187,26 @@ def generate_heatmap_plots_for_rectangle_skewed():
 
                 ### recompile binary
                 print("🎬 Re-compiling C implementation...", flush=True)
-                run_cmake(
-                    compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
-                    skew_block_x=x_dimension,  skew_block_y=y_dimension,  skew_timesteps=timestamp,
-                    # placeholders below cuz they we are only testing skewed
-                    sskew_block_x=64, sskew_block_y=64, sskew_timesteps=32, sskew_sub_block_x=32, sskew_sub_block_y=32,
-                    uskew_block_x=16, uskew_block_y=56, uskew_timesteps=15,
-                    block_size=69,
-                )
+                if implementation == "skewed":
+                    run_cmake(
+                        compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
+                        skew_block_x=x_dimension,  skew_block_y=y_dimension,  skew_timesteps=timestamp,
+                        # placeholders below cuz they we are only testing skewed
+                        sskew_block_x=64, sskew_block_y=64, sskew_sub_block_x=32, sskew_sub_block_y=32, sskew_timesteps=1,
+                        uskew_block_x=32, uskew_block_y=32, uskew_timesteps=1,
+                        block_size=69,
+                    )
+                elif implementation == "uskewed":
+                    run_cmake(
+                        compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
+                        uskew_block_x=x_dimension, uskew_block_y=x_dimension, uskew_timesteps=timestamp,
+                        # placeholders below cuz they we are only testing uskewed
+                        skew_block_x=64,  skew_block_y=64,  skew_timesteps=1,
+                        sskew_block_x=64, sskew_block_y=64, sskew_sub_block_x=32, sskew_sub_block_y=32, sskew_timesteps=1,
+                        block_size=69,
+                    )
+                else:
+                    raise Error("Using the general heatmap with implementations other that skewed/uskewed needs a (smol) manual adjustments in the code...")
 
                 # run make in C implementation dir and then cd back into the prev dir (infra dir)
                 cd $C_IMPLEMENTATION_DIR/build
@@ -203,7 +228,7 @@ def generate_heatmap_plots_for_rectangle_skewed():
 
                 print("✅ Finished re-compiling C implementation!")
 
-                n_flops, n_cycles = get_flops_and_cycles_count("skewed", new_binary_path, matrix_dimension)
+                n_flops, n_cycles = get_flops_and_cycles_count(implementation, new_binary_path, matrix_dimension)
                 writer.writerow([n_flops, n_cycles, x_dimension, y_dimension, timestamp, matrix_dimension])
                 file.flush() # write changes to disk
                 print(f"USED BINARY: {new_binary_path}")
@@ -223,7 +248,7 @@ def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix
         -x "," \
         --output @(output_file) \
         --event=fp_arith_inst_retired.128b_packed_double,fp_arith_inst_retired.128b_packed_single,fp_arith_inst_retired.256b_packed_double,fp_arith_inst_retired.256b_packed_single,fp_arith_inst_retired.scalar_double,fp_arith_inst_retired.scalar_single \
-        @(new_binary_path) -I @(implementation) -t --dimension @(matrix_dimension)
+        @(new_binary_path) -I @(implementation) -t --dimension @(matrix_dimension) --num_iter $N_SIM_STEPS
     )
 
     n_cycles = float(cycles.strip().split()[-1])
@@ -401,10 +426,14 @@ def set_global_variables(args):
     else:
         raise Error("Invalid chompiler chose, please abort ur life, tnx")
 
+    $COMPILER_HUMAN_NAME = args.compiler
+
     $DISABLE_AUTO_VEC = args.disable_auto_vec
 
     $TESTING_DIR = Path(f"{$TESTING_INFRA_ROOT_DIR}/.test_results").resolve(strict=True)
     $BLOCK_SIZE = args.block_size
+
+    $N_SIM_STEPS = args.num_iter
 
     ## XONSH
     # throw error if bash command fails, otherwise we silently ignore the error
