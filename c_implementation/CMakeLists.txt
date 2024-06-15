@@ -55,7 +55,8 @@ target_sources(cavity_flow PRIVATE ${PROJECT_BINARY_DIR}/src/generated_simulatio
 
 if(NO_AUTO_VEC STREQUAL "DISABLE_AUTO_VEC")
 	# disable auto vec with "-fno-tree-vectorize" & no "-mno-avx"
-	target_compile_options(cavity_flow PUBLIC -g -fopt-info -O3 -fno-tree-vectorize -mno-avx -Wall -Wextra -mfma -ffast-math)
+	# -g option removed temporarily, while not VTune-ing
+	target_compile_options(cavity_flow PUBLIC -Wall -Wextra -O3 -fno-tree-vectorize -mno-avx -mfma -ffast-math)
 	message(STATUS "AUTO VEC DISABLED ❌")
 else()
 	# target_compile_options(cavity_flow PUBLIC -g -fopt-info -O3 -Wall -Wextra -mavx2 -mfma -ffast-math)
