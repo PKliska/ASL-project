@@ -158,9 +158,8 @@ def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: in
     # block_sizes_x = [ 32, 48, 60, 64, 72, 81, 96]
     # block_sizes_y = [ 32, 48, 60, 64, 72, 81, 96]
 
-    block_sizes_x = list(range(8, 64, 8))
-    block_sizes_y = [20,24,28]
-
+    block_sizes_x = list(range(16, 65, 16))
+    block_sizes_y = list(range(16, 65, 16))
 
     # # most optimal so far
     # block_sizes_x = [32]
@@ -199,7 +198,7 @@ def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: in
                 elif implementation == "uskewed":
                     run_cmake(
                         compiler=$COMPILER, should_disable_auto_vectorization=$DISABLE_AUTO_VEC,
-                        uskew_block_x=x_dimension, uskew_block_y=x_dimension, uskew_timesteps=timestamp,
+                        uskew_block_x=x_dimension, uskew_block_y=y_dimension, uskew_timesteps=timestamp,
                         # placeholders below cuz they we are only testing uskewed
                         skew_block_x=64,  skew_block_y=64,  skew_timesteps=1,
                         sskew_block_x=64, sskew_block_y=64, sskew_sub_block_x=32, sskew_sub_block_y=32, sskew_timesteps=1,
