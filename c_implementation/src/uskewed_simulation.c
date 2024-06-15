@@ -77,7 +77,6 @@ static inline void uskewed_trapeze_mid(double *restrict b, double *restrict p0, 
         for(int ty=ty0;ty<ty1;ty+=4){
 		#pragma clang loop unroll(full)
 		for(int i=0;i<8;i++){
-		__builtin_prefetch((const void *) ((tx+i)*d + ty), 1);
                 double a0 = UCOMPUTE_A(old, d, tx+i, ty+0);
                 double b0 = UCOMPUTE_B(old, d, tx+i, ty+0);
                 double a1 = UCOMPUTE_A(old, d, tx+i, ty+1);
