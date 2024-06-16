@@ -257,7 +257,7 @@ def get_flops_and_cycles_count(implementation: str, new_binary_path: str, matrix
 
     perf_res = $(cat @(output_file))
 
-    flop_measurements = [int(l.split(",")[0]) / 4 for l in perf_res.splitlines()[2:]]
+    flop_measurements = [int(l.split(",")[0]) / 2 for l in perf_res.splitlines()[2:]]
     # print(flop_measurements)
 
     n_128b_packed_double = flop_measurements[0]

@@ -23,7 +23,7 @@
 
 #include "tsc_x86.h"
 
-#define NUM_RUNS 2
+#define NUM_RUNS 1
 #define CYCLES_REQUIRED 1e8
 
 struct implementation
@@ -59,7 +59,7 @@ static const struct implementation IMPLEMENTATIONS[] = {
      .create = (struct simulation * (*)(size_t, double, double, double)) new_aligned_AVX_simulation},
     {.name = "blocking",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_blocking_simulation
-    },    
+    },
     {.name = "skewed",
      .create = (struct simulation * (*)(size_t, double, double, double)) new_skewed_simulation
     },
