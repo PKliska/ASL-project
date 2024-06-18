@@ -158,8 +158,8 @@ def generate_heatmap_plots_for_general(implementation: str, matrix_dimension: in
     # constraints for skewed: no constraints for x, y
     # constraints for uskewed: x divisible by 8 AND y divisible by 4
 
-    block_sizes_x = [12,20,24,32,40]
-    block_sizes_y = [16,24,32,40, 52,80,100,140]
+    block_sizes_x = [12,20,24,32,40,64]
+    block_sizes_y = [32,52,80,100,120,140,196]
 
     # block_sizes_x = list(range(16, 65, 16))
     # block_sizes_y = list(range(16, 65, 16))
@@ -285,24 +285,26 @@ def run_timing_test(implementations: str, dimensions_which_to_test: list[int]):
     current_time = strftime("%Y-%m-%d %H:%M:%S")
 
     for implementation in implementations:
-        data = []
-        for matrix_dimension in dimensions_which_to_test:
-            print(f"Simulating {implementation} with dimension={matrix_dimension}...", end="", flush=True)
-
-            n_flops, n_cycles = get_flops_and_cycles_count(implementation, $C_BINARY, matrix_dimension)
-
-            print(f" took {n_cycles} cycles ({n_cycles/(3.4*10**9)} sec)")
-            data.append((matrix_dimension, n_cycles, n_flops))
-
-        print(data)
-
         root_dir_for_this_test = f"{$TESTING_DIR}/timing/{current_time}"
         mkdir --parents @(root_dir_for_this_test)
 
         with open(f"{root_dir_for_this_test}/{implementation}.csv", "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["matrix_dimension", "n_cycles", "n_flops"])
-            writer.writerows(data)
+
+            # data = []
+            for matrix_dimension in dimensions_which_to_test:
+                start_time = $(date  "+%H:%M").strip()
+                print(f"Simulating {implementation} with dimension={matrix_dimension}, start at {start_time}...", flush=True)
+
+                n_flops, n_cycles = get_flops_and_cycles_count(implementation, $C_BINARY, matrix_dimension)
+
+                print(f"Took {n_cycles} cycles ({n_cycles/(3.4*10**9)} sec) & perf={n_flops/n_cycles :.2f} flops/cycle")
+                # data.append((matrix_dimension, n_cycles, n_flops))
+                writer.writerow([matrix_dimension, n_cycles, n_flops])
+                csvfile.flush() # write changes to disk
+
+            # print(data)
 
     all_implementations = sorted([f"{i}.csv" for i in implementations])
     all_implementations_comma_sep = ",".join(all_implementations)
